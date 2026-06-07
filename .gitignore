@@ -5,3 +5,6 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Source data — contains PII (names, phone numbers). Never commit.
+source-data/
