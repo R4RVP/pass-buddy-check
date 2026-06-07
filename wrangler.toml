@@ -1,0 +1,44 @@
+name            = "pass-buddy-check"
+main            = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# ── D1 Database ──────────────────────────────────────────────────────────────
+# After running `wrangler d1 create buddy-check-db`, paste the database_id here.
+[[d1_databases]]
+binding       = "DB"
+database_name = "buddy-check-db"
+database_id   = "REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE"
+
+# ── Durable Objects ───────────────────────────────────────────────────────────
+[durable_objects]
+bindings = [
+  { name = "CHECKIN_ALARM", class_name = "CheckinAlarmDO" }
+]
+
+[[migrations]]
+tag         = "v1"
+new_classes = ["CheckinAlarmDO"]
+
+# ── Environment variables (non-secret) ───────────────────────────────────────
+[vars]
+APP_NAME      = "PASS Buddy Check"
+APP_URL       = "https://pass-buddy-check.passregioniv.workers.dev"
+SMS_ENABLED   = "false"   # set to "true" in Phase 2 when Twilio is active
+EMAIL_ENABLED = "false"   # set to "true" in Phase 2 when Resend is active
+
+# ── Secrets (set via CLI — never commit values to git) ───────────────────────
+#
+# Required before launch:
+#   wrangler secret put JWT_SECRET          # random string, 32+ chars
+#   wrangler secret put VAPID_PUBLIC_KEY    # from: npx web-push generate-vapid-keys
+#   wrangler secret put VAPID_PRIVATE_KEY
+#   wrangler secret put VAPID_SUBJECT       # mailto:bstruck@passnational.org
+#
+# Phase 2 — SMS (Twilio):
+#   wrangler secret put TWILIO_ACCOUNT_SID
+#   wrangler secret put TWILIO_AUTH_TOKEN
+#   wrangler secret put TWILIO_VERIFY_SID
+#   wrangler secret put TWILIO_FROM_NUMBER
+#
+# Phase 2 — Email (Resend):
+#   wrangler secret put RESEND_API_KEY

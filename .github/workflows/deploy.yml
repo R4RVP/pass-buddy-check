@@ -1,0 +1,39 @@
+name: Deploy — PASS Buddy Check
+
+# Auto-deploy to Cloudflare Workers on every push to main.
+#
+# One-time setup required:
+#   1. Go to: GitHub repo → Settings → Secrets and variables → Actions
+#   2. Click "New repository secret"
+#   3. Name:  CLOUDFLARE_API_TOKEN
+#      Value: your Cloudflare API token (needs Workers:Edit + D1:Edit permissions)
+#   After that, this workflow runs automatically on every push to main.
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy

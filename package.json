@@ -1,0 +1,18 @@
+{
+  "name": "pass-buddy-check",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PASS Employee Location Safety Pilot — Buddy Check System",
+  "scripts": {
+    "dev":         "wrangler dev",
+    "deploy":      "wrangler deploy",
+    "db:create":   "wrangler d1 create buddy-check-db",
+    "db:migrate":  "wrangler d1 migrations apply buddy-check-db",
+    "db:migrate:local": "wrangler d1 migrations apply buddy-check-db --local",
+    "db:seed":     "wrangler d1 execute buddy-check-db --local --file=migrations/seed.sql",
+    "vapid:gen":   "npx web-push generate-vapid-keys"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
