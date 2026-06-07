@@ -20,7 +20,8 @@ import { handleVapidKey, handleSubscribe,
 import { handleBoard }                               from './board.js';
 import { handleAdminListMembers, handleAdminAddMember,
          handleAdminUpdateMember, handleAdminListRequests,
-         handleAdminDecideRequest }                  from './admin.js';
+         handleAdminDecideRequest, handleAdminPurge } from './admin.js';
+import { handlePurge }                               from './purge.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -74,6 +75,9 @@ const routes = [
   // Admin — roster import (M3)
   ['POST',  '/api/admin/roster/import',       handleRosterImport],
 
+  // Purge — manual trigger (M11)
+  ['POST',  '/api/admin/purge',               handleAdminPurge],
+
   // Analytics (M12)
   // ['GET',   '/api/admin/analytics',           handleAdminAnalytics],
 ];
@@ -93,6 +97,13 @@ export default {
     // Everything else: Workers Assets serves /public/
     // Falls back to placeholder shell when assets binding is unavailable (local dev without assets)
     return env.ASSETS ? env.ASSETS.fetch(request) : serveAppShell();
+  },
+
+  // ── Scheduled cron handler (M11) ─────────────────────────────────────────
+  // Runs on the schedule defined in wrangler.toml [triggers].
+  // Purges closed check-ins older than 7 days after writing analytics events.
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(handlePurge(env));
   },
 };
 

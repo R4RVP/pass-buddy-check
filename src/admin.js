@@ -4,6 +4,7 @@
 
 import { requireAuth }                                           from './auth.js';
 import { normalizePhone, json, err400, err401, err403, err404 } from './utils.js';
+import { handlePurge }                                          from './purge.js';
 
 const VALID_ORG_LEVELS = ['flight_standards', 'aircraft_cert', 'other'];
 
@@ -202,4 +203,17 @@ export async function handleAdminDecideRequest(request, env, params) {
   `).bind(decision, id).run();
 
   return json({ ok: true, decision });
+}
+
+// ── POST /api/admin/purge ─────────────────────────────────────────────────────
+// Manual trigger for the purge job. Useful for testing without waiting for cron.
+// Runs the same logic as the scheduled cron handler.
+
+export async function handleAdminPurge(request, env) {
+  const session = await requireAuth(request, env);
+  if (!session) return err401();
+  if (!hasAdminAccess(session, env)) return err403();
+
+  const result = await handlePurge(env);
+  return json({ ok: true, ...result });
 }
