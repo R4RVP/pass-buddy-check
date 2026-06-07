@@ -10,6 +10,7 @@
  */
 
 import { CheckinAlarmDO } from './workers/alarm.js';
+import { handleRequestOtp, handleVerifyOtp, handleLogout } from './auth.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -24,9 +25,9 @@ const routes = [
   ['GET',   '/api/health',                    handleHealth],
 
   // Auth (M2)
-  // ['POST',  '/api/auth/request-otp',          handleRequestOtp],
-  // ['POST',  '/api/auth/verify-otp',           handleVerifyOtp],
-  // ['POST',  '/api/auth/logout',               handleLogout],
+  ['POST',  '/api/auth/request-otp',          handleRequestOtp],
+  ['POST',  '/api/auth/verify-otp',           handleVerifyOtp],
+  ['POST',  '/api/auth/logout',               handleLogout],
 
   // Registration (M3)
   // ['POST',  '/api/register',                  handleRegister],
