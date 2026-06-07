@@ -526,9 +526,16 @@
       <p id="err-checkin" class="error-msg"></p>
       <button type="submit" class="btn-primary">Check In</button>
     </form>
-    <a id="board-link" href="/board" style="display:none;text-align:center;margin-top:1rem;font-size:.8rem;color:var(--muted);text-decoration:underline;text-underline-offset:2px;display:none">
-      View Active Board →
-    </a>
+    <div id="admin-links" style="display:none;text-align:center;margin-top:1rem;font-size:.8rem;color:var(--muted)">
+      <a id="board-link" href="/board"
+         style="color:var(--muted);text-decoration:underline;text-underline-offset:2px;display:none">
+        Active Board →
+      </a>
+      <a id="admin-link" href="/admin"
+         style="color:var(--muted);text-decoration:underline;text-underline-offset:2px;display:none">
+        Admin Panel →
+      </a>
+    </div>
   </div>
 </div>
 
@@ -669,7 +676,7 @@ function clearBusy(btn, label) {
 async function init() {
   const res = await api('GET', '/api/me');
   if (res.ok && res.authenticated) {
-    state.member = pick(res, ['id', 'name', 'gov_device_disclosed', 'phone_uncertain', 'board_access']);
+    state.member = pick(res, ['id', 'name', 'gov_device_disclosed', 'phone_uncertain', 'board_access', 'admin_access']);
     await routeAfterAuth();
   } else if (!res._expired) {
     show('login');
@@ -737,7 +744,7 @@ document.getElementById('form-otp').addEventListener('submit', async e => {
     return;
   }
 
-  state.member = pick(res.member, ['id', 'name', 'gov_device_disclosed', 'phone_uncertain', 'board_access']);
+  state.member = pick(res.member, ['id', 'name', 'gov_device_disclosed', 'phone_uncertain', 'board_access', 'admin_access']);
   await routeAfterAuth();
 });
 
@@ -790,9 +797,17 @@ function initCheckinForm() {
   document.getElementById('checkin-member').textContent =
     m && m.name ? 'Logged in as ' + m.name : '';
 
-  // Show board link only for authorized members
+  // Show admin/board links for authorized members
+  const container = document.getElementById('admin-links');
   const boardLink = document.getElementById('board-link');
-  if (boardLink) boardLink.style.display = m?.board_access ? 'block' : 'none';
+  const adminLink = document.getElementById('admin-link');
+  if (container && boardLink && adminLink) {
+    const hasBrd = m?.board_access || m?.admin_access;
+    const hasAdm = m?.admin_access;
+    boardLink.style.display = (hasBrd && !hasAdm) ? 'inline' : 'none';
+    adminLink.style.display = hasAdm ? 'inline' : 'none';
+    container.style.display = hasBrd ? 'block' : 'none';
+  }
 
   // Default ETA: now + 2 hours, rounded up to nearest 15 min
   const now = new Date();

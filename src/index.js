@@ -18,6 +18,9 @@ import { handleCheckin, handleGetActiveCheckin,
 import { handleVapidKey, handleSubscribe,
          handleUnsubscribe }                         from './subscribe.js';
 import { handleBoard }                               from './board.js';
+import { handleAdminListMembers, handleAdminAddMember,
+         handleAdminUpdateMember, handleAdminListRequests,
+         handleAdminDecideRequest }                  from './admin.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -60,13 +63,13 @@ const routes = [
   ['GET',   '/api/board',                     handleBoard],
 
   // Admin — members (M9)
-  // ['GET',   '/api/admin/members',             handleAdminListMembers],
-  // ['POST',  '/api/admin/members',             handleAdminAddMember],
-  // ['PATCH', '/api/admin/members/:id',         handleAdminUpdateMember],
+  ['GET',   '/api/admin/members',             handleAdminListMembers],
+  ['POST',  '/api/admin/members',             handleAdminAddMember],
+  ['PATCH', '/api/admin/members/:id',         handleAdminUpdateMember],
 
   // Admin — pending requests (M9)
-  // ['GET',   '/api/admin/requests',            handleAdminListRequests],
-  // ['POST',  '/api/admin/requests/:id/decide', handleAdminDecideRequest],
+  ['GET',   '/api/admin/requests',            handleAdminListRequests],
+  ['POST',  '/api/admin/requests/:id/decide', handleAdminDecideRequest],
 
   // Admin — roster import (M3)
   ['POST',  '/api/admin/roster/import',       handleRosterImport],
