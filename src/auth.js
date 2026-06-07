@@ -1,6 +1,8 @@
 // PASS Buddy Check — Auth module
 // JWT session management, OTP generation/verification, Twilio SMS stub
 
+import { normalizePhone, json, err400, err429 } from './utils.js';
+
 const JWT_ALG        = { name: 'HMAC', hash: 'SHA-256' };
 const OTP_TTL_SEC    = 600;   // 10 minutes
 const OTP_MAX_REQ    = 3;     // per phone per window
@@ -84,15 +86,6 @@ function generateOtp() {
   return String(new DataView(bytes.buffer).getUint32(0) % 1_000_000).padStart(6, '0');
 }
 
-// Normalize phone to E.164 (+1XXXXXXXXXX for US numbers)
-function normalizePhone(raw) {
-  if (!raw) return null;
-  const digits = String(raw).replace(/\D/g, '');
-  if (digits.length === 10)                      return `+1${digits}`;
-  if (digits.length === 11 && digits[0] === '1') return `+${digits}`;
-  return null;
-}
-
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 export async function handleRequestOtp(request, env) {
@@ -109,7 +102,7 @@ export async function handleRequestOtp(request, env) {
   ).bind(phone, windowStart).all();
 
   if ((rateCnt[0]?.cnt ?? 0) >= OTP_MAX_REQ) {
-    return json({ error: `Too many requests. Try again in ${OTP_WINDOW_MIN} minutes.` }, 429);
+    return err429(`Too many requests. Try again in ${OTP_WINDOW_MIN} minutes.`);
   }
 
   // Check allowlist — only active members get a real OTP
@@ -229,13 +222,3 @@ async function sendSms(to, body, env) {
   if (!res.ok) console.error(`[Twilio] SMS to ${to} failed:`, await res.text());
 }
 
-// ── Shared util ───────────────────────────────────────────────────────────────
-
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
-  });
-}
-
-function err400(message) { return json({ error: message }, 400); }

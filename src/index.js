@@ -11,6 +11,7 @@
 
 import { CheckinAlarmDO } from './workers/alarm.js';
 import { handleRequestOtp, handleVerifyOtp, handleLogout } from './auth.js';
+import { handleRegister, handleRosterImport } from './register.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -30,7 +31,7 @@ const routes = [
   ['POST',  '/api/auth/logout',               handleLogout],
 
   // Registration (M3)
-  // ['POST',  '/api/register',                  handleRegister],
+  ['POST',  '/api/register',                  handleRegister],
 
   // Check-in (M4)
   // ['POST',  '/api/checkin',                   handleCheckin],
@@ -54,8 +55,8 @@ const routes = [
   // ['GET',   '/api/admin/requests',            handleAdminListRequests],
   // ['POST',  '/api/admin/requests/:id/decide', handleAdminDecideRequest],
 
-  // Admin — roster import (M9)
-  // ['POST',  '/api/admin/roster/import',       handleAdminRosterImport],
+  // Admin — roster import (M3)
+  ['POST',  '/api/admin/roster/import',       handleRosterImport],
 
   // Analytics (M12)
   // ['GET',   '/api/admin/analytics',           handleAdminAnalytics],
