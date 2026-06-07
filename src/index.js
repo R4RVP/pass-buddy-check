@@ -10,8 +10,11 @@
  */
 
 import { CheckinAlarmDO } from './workers/alarm.js';
-import { handleRequestOtp, handleVerifyOtp, handleLogout } from './auth.js';
-import { handleRegister, handleRosterImport } from './register.js';
+import { handleRequestOtp, handleVerifyOtp, handleLogout,
+         handleMe, handleDisclosure }               from './auth.js';
+import { handleRegister, handleRosterImport }       from './register.js';
+import { handleCheckin, handleGetActiveCheckin,
+         handleCheckout, handleEtaUpdate }           from './checkin.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -33,15 +36,19 @@ const routes = [
   // Registration (M3)
   ['POST',  '/api/register',                  handleRegister],
 
+  // Member profile + disclosure (M4)
+  ['GET',   '/api/me',                        handleMe],
+  ['POST',  '/api/me/disclosure',             handleDisclosure],
+
   // Check-in (M4)
-  // ['POST',  '/api/checkin',                   handleCheckin],
-  // ['GET',   '/api/checkin/active',            handleGetActiveCheckin],
+  ['POST',  '/api/checkin',                   handleCheckin],
+  ['GET',   '/api/checkin/active',            handleGetActiveCheckin],
 
-  // ETA update (M5)
-  // ['PATCH', '/api/checkin/:id/eta',           handleEtaUpdate],
+  // ETA update (M4 basic — notifications in M5)
+  ['PATCH', '/api/checkin/:id/eta',           handleEtaUpdate],
 
-  // Check-out (M6)
-  // ['POST',  '/api/checkin/:id/checkout',      handleCheckout],
+  // Check-out (M4 basic — notifications in M6)
+  ['POST',  '/api/checkin/:id/checkout',      handleCheckout],
 
   // Active board (M8)
   // ['GET',   '/api/board',                     handleBoard],
@@ -74,9 +81,9 @@ export default {
       return routeApi(request, url, env);
     }
 
-    // Everything else: serve the app shell
-    // In M4, this is replaced by Workers Assets serving /public/
-    return serveAppShell();
+    // Everything else: Workers Assets serves /public/
+    // Falls back to placeholder shell when assets binding is unavailable (local dev without assets)
+    return env.ASSETS ? env.ASSETS.fetch(request) : serveAppShell();
   },
 };
 

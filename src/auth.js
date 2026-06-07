@@ -1,7 +1,7 @@
 // PASS Buddy Check — Auth module
 // JWT session management, OTP generation/verification, Twilio SMS stub
 
-import { normalizePhone, json, err400, err429 } from './utils.js';
+import { normalizePhone, json, err400, err401, err429 } from './utils.js';
 
 const JWT_ALG        = { name: 'HMAC', hash: 'SHA-256' };
 const OTP_TTL_SEC    = 600;   // 10 minutes
@@ -170,9 +170,13 @@ export async function handleVerifyOtp(request, env) {
     memberId = members[0].id;
   }
 
-  // Fetch full member for session payload
+  // Fetch full member + phone_uncertain flag from roster for session payload
   const { results: rows } = await env.DB.prepare(
-    `SELECT id, name, org_level, unit_code, gov_device_disclosed FROM members WHERE id = ?`
+    `SELECT m.id, m.name, m.org_level, m.unit_code, m.gov_device_disclosed,
+            COALESCE(mr.phone_uncertain, 0) AS phone_uncertain
+     FROM   members m
+     LEFT JOIN member_roster mr ON mr.phone = m.phone
+     WHERE  m.id = ?`
   ).bind(memberId).all();
   const m = rows[0];
 
@@ -183,7 +187,12 @@ export async function handleVerifyOtp(request, env) {
 
   return new Response(JSON.stringify({
     ok:     true,
-    member: { id: m.id, name: m.name, gov_device_disclosed: m.gov_device_disclosed === 1 },
+    member: {
+      id:                  m.id,
+      name:                m.name,
+      gov_device_disclosed: m.gov_device_disclosed === 1,
+      phone_uncertain:      m.phone_uncertain === 1,
+    },
   }), {
     status:  200,
     headers: {
@@ -202,6 +211,53 @@ export async function handleLogout() {
       'Set-Cookie':   clearCookie(),
     },
   });
+}
+
+// ── GET /api/me ───────────────────────────────────────────────────────────────
+// Returns session member profile including phone_uncertain from roster.
+// Called on every page load to restore session without re-authenticating.
+
+export async function handleMe(request, env) {
+  const session = await requireAuth(request, env);
+  if (!session) return json({ ok: false, authenticated: false }, 401);
+
+  const { results } = await env.DB.prepare(
+    `SELECT m.id, m.name, m.phone, m.status, m.gov_device_disclosed, m.org_level,
+            COALESCE(mr.phone_uncertain, 0) AS phone_uncertain
+     FROM   members m
+     LEFT JOIN member_roster mr ON mr.phone = m.phone
+     WHERE  m.id = ?`
+  ).bind(session.sub).all();
+
+  if (!results.length) return json({ ok: false, authenticated: false }, 401);
+
+  const m = results[0];
+  return json({
+    ok:                   true,
+    authenticated:        true,
+    id:                   m.id,
+    name:                 m.name,
+    phone:                m.phone,
+    status:               m.status,
+    org_level:            m.org_level,
+    gov_device_disclosed: m.gov_device_disclosed === 1,
+    phone_uncertain:      m.phone_uncertain === 1,
+  });
+}
+
+// ── POST /api/me/disclosure ───────────────────────────────────────────────────
+// Member acknowledges the government-device disclosure.
+// Sets gov_device_disclosed = 1; disclosure screen is not shown again.
+
+export async function handleDisclosure(request, env) {
+  const session = await requireAuth(request, env);
+  if (!session) return err401();
+
+  await env.DB.prepare(
+    `UPDATE members SET gov_device_disclosed = 1 WHERE id = ?`
+  ).bind(session.sub).run();
+
+  return json({ ok: true });
 }
 
 // ── Twilio SMS (Phase 2) ──────────────────────────────────────────────────────
