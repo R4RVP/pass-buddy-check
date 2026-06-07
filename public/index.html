@@ -584,6 +584,9 @@ async function init() {
 }
 
 async function routeAfterAuth() {
+  // Start push setup in background — doesn't block routing
+  initPush().catch(() => {});
+
   const res = await api('GET', '/api/checkin/active');
   if (res.ok && res.checkin) {
     state.checkin = res.checkin;
@@ -985,6 +988,65 @@ function showToast(msg) {
   el.classList.add('visible');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+// ── Web Push ──────────────────────────────────────────────────────────────────
+
+/**
+ * Register the service worker and subscribe to Web Push notifications.
+ * Called silently after auth — any error is swallowed.
+ *
+ * iOS Safari requires PWA install (M10) for push to work.
+ * Android Chrome works immediately once permission is granted.
+ */
+async function initPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  let reg;
+  try {
+    reg = await navigator.serviceWorker.register('/sw.js');
+  } catch (e) {
+    console.warn('[push] SW registration failed:', e.message);
+    return;
+  }
+
+  // If already subscribed, re-sync the subscription with the server
+  // (browsers can re-key subscriptions without notice)
+  const existing = await reg.pushManager.getSubscription().catch(() => null);
+  if (existing) {
+    await api('POST', '/api/push/subscribe', existing).catch(() => {});
+    return;
+  }
+
+  // Fetch VAPID public key from server
+  const keyRes = await api('GET', '/api/push/vapid-key').catch(() => null);
+  if (!keyRes?.ok || !keyRes.publicKey) return;
+
+  // Request push permission and subscribe
+  // On Android Chrome this may prompt the user; on iOS requires PWA install (M10)
+  let sub;
+  try {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly:      true,
+      applicationServerKey: urlB64ToUint8Array(keyRes.publicKey),
+    });
+  } catch (e) {
+    // User denied permission, or browser doesn't support push
+    console.log('[push] Push subscribe failed (normal if permission denied):', e.message);
+    return;
+  }
+
+  // Save subscription to server
+  await api('POST', '/api/push/subscribe', sub).catch(() => {});
+  console.log('[push] Push subscription registered.');
+}
+
+/** Convert a base64url string to Uint8Array (required for applicationServerKey) */
+function urlB64ToUint8Array(b64) {
+  const padding = '='.repeat((4 - b64.length % 4) % 4);
+  const base64  = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw     = atob(base64);
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

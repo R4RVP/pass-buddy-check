@@ -15,6 +15,8 @@ import { handleRequestOtp, handleVerifyOtp, handleLogout,
 import { handleRegister, handleRosterImport }       from './register.js';
 import { handleCheckin, handleGetActiveCheckin,
          handleCheckout, handleEtaUpdate }           from './checkin.js';
+import { handleVapidKey, handleSubscribe,
+         handleUnsubscribe }                         from './subscribe.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -44,11 +46,14 @@ const routes = [
   ['POST',  '/api/checkin',                   handleCheckin],
   ['GET',   '/api/checkin/active',            handleGetActiveCheckin],
 
-  // ETA update (M4 basic — notifications in M5)
+  // ETA update + checkout (M4 DB + alarm; M5 push notifications)
   ['PATCH', '/api/checkin/:id/eta',           handleEtaUpdate],
-
-  // Check-out (M4 basic — notifications in M6)
   ['POST',  '/api/checkin/:id/checkout',      handleCheckout],
+
+  // Web Push subscription (M5)
+  ['GET',    '/api/push/vapid-key',           handleVapidKey],
+  ['POST',   '/api/push/subscribe',           handleSubscribe],
+  ['DELETE', '/api/push/subscribe',           handleUnsubscribe],
 
   // Active board (M8)
   // ['GET',   '/api/board',                     handleBoard],

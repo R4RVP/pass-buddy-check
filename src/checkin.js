@@ -2,10 +2,12 @@
 // Handles: create check-in, active check-in query, ETA update, checkout
 //
 // M4: DB operations + Durable Object alarm wiring implemented.
-//     Notification dispatch is stubbed — full implementation in M7.
+// M5: Web Push dispatch for ETA update + checkout confirmation.
+//     Reminder + overdue alarm notifications still stubbed (M7).
 
-import { requireAuth }                         from './auth.js';
-import { normalizePhone, json, err400, err401, err404 } from './utils.js';
+import { requireAuth }                                    from './auth.js';
+import { normalizePhone, json, err400, err401, err404 }  from './utils.js';
+import { sendPush }                                       from './push.js';
 
 const VALID_LOCATION_TYPES = ['fire', 'bomb_threat', 'tornado', 'field', 'other'];
 
@@ -146,7 +148,8 @@ export async function handleGetActiveCheckin(request, env) {
 
 // ── POST /api/checkin/:id/checkout ───────────────────────────────────────────
 // Close an active check-in. Cancels the Durable Object alarm.
-// M7 adds push notification to buddy + safety contact on checkout.
+// M5: sends checkout confirmation push to member.
+// M7: adds push notification to buddy + safety contact.
 
 export async function handleCheckout(request, env, params) {
   const session = await requireAuth(request, env);
@@ -154,13 +157,18 @@ export async function handleCheckout(request, env, params) {
 
   const { id } = params;
 
-  const { results } = await env.DB.prepare(
-    `SELECT id, status FROM checkins WHERE id = ? AND member_id = ?`
-  ).bind(id, session.sub).all();
+  // Fetch check-in + member push subscription in one query
+  const { results } = await env.DB.prepare(`
+    SELECT c.id, c.status, m.push_sub
+    FROM   checkins c
+    JOIN   members  m ON m.id = c.member_id
+    WHERE  c.id = ? AND c.member_id = ?
+  `).bind(id, session.sub).all();
 
   if (!results.length) return err404();
 
-  const { status } = results[0];
+  const { status, push_sub } = results[0];
+
   if (status === 'checked_out') {
     return json({ ok: true, message: 'Already checked out.' });
   }
@@ -185,8 +193,40 @@ export async function handleCheckout(request, env, params) {
     console.error('[checkout] Alarm cancel failed:', e?.message);
   }
 
+  // ── M5: send checkout confirmation push to member ──────────────────────────
+  const subscription = push_sub ? JSON.parse(push_sub) : null;
+  const pushResult   = await sendPush(
+    subscription,
+    {
+      title: '✅ Checked Out',
+      body:  "You've been marked as safely checked out.",
+      tag:   'buddy-check-checkout',
+      url:   '/',
+    },
+    env
+  );
+
+  // Clear expired subscription from DB
+  if (pushResult.gone) {
+    await env.DB.prepare(`UPDATE members SET push_sub = NULL WHERE id = ?`)
+      .bind(session.sub).run();
+  }
+
+  // Log to notification_log (always — helps track push coverage across pilot members)
+  const logStatus = pushResult.ok                  ? 'sent'
+    : pushResult.reason === 'vapid_not_configured' ? 'stubbed'
+    : pushResult.reason === 'no_subscription'      ? 'stubbed'
+    : 'failed';
+  await env.DB.prepare(`
+    INSERT INTO notification_log
+      (id, checkin_id, recipient_type, channel, event, status, sent_at)
+    VALUES (?, ?, 'member', 'push', 'checkout', ?, datetime('now'))
+  `).bind(crypto.randomUUID(), id, logStatus).run().catch(e =>
+    console.error('[checkout] notification_log insert failed:', e?.message)
+  );
+
   // M7 TODO: send checkout notification to buddy + safety contact
-  console.log(`[checkout] ${session.name} checked out of ${id}`);
+  console.log(`[checkout] ${session.name} checked out of ${id} — push: ${pushResult.ok ? 'sent' : pushResult.reason ?? 'failed'}`);
 
   return json({ ok: true });
 }
@@ -213,13 +253,18 @@ export async function handleEtaUpdate(request, env, params) {
     return err400('expected_out_at must be in the future.');
   }
 
-  const { results } = await env.DB.prepare(
-    `SELECT id, grace_minutes FROM checkins WHERE id = ? AND member_id = ? AND status = 'active'`
-  ).bind(id, session.sub).all();
+  // Fetch check-in + member push subscription in one query
+  const { results } = await env.DB.prepare(`
+    SELECT c.id, c.grace_minutes, m.push_sub
+    FROM   checkins c
+    JOIN   members  m ON m.id = c.member_id
+    WHERE  c.id = ? AND c.member_id = ? AND c.status = 'active'
+  `).bind(id, session.sub).all();
 
   if (!results.length) return err404();
 
-  const grace_minutes = results[0].grace_minutes ?? 30;
+  const { grace_minutes: rawGrace, push_sub } = results[0];
+  const grace_minutes = rawGrace ?? 30;
 
   await env.DB.prepare(
     `UPDATE checkins
@@ -246,8 +291,39 @@ export async function handleEtaUpdate(request, env, params) {
     console.error('[eta] Alarm reschedule failed:', e?.message);
   }
 
-  // M5 TODO: push notification to member confirming ETA update
-  console.log(`[eta] ${session.name} updated ETA for ${id} → ${expected_out_at}`);
+  // ── M5: send ETA update confirmation push to member ────────────────────────
+  const subscription = push_sub ? JSON.parse(push_sub) : null;
+  const pushResult   = await sendPush(
+    subscription,
+    {
+      title: '⏱ ETA Updated',
+      body:  'Your check-in return time has been updated.',
+      tag:   'buddy-check-eta',
+      url:   '/',
+    },
+    env
+  );
+
+  // Clear expired subscription from DB
+  if (pushResult.gone) {
+    await env.DB.prepare(`UPDATE members SET push_sub = NULL WHERE id = ?`)
+      .bind(session.sub).run();
+  }
+
+  // Log to notification_log
+  const logStatus = pushResult.ok                  ? 'sent'
+    : pushResult.reason === 'vapid_not_configured' ? 'stubbed'
+    : pushResult.reason === 'no_subscription'      ? 'stubbed'
+    : 'failed';
+  await env.DB.prepare(`
+    INSERT INTO notification_log
+      (id, checkin_id, recipient_type, channel, event, status, sent_at)
+    VALUES (?, ?, 'member', 'push', 'eta_update', ?, datetime('now'))
+  `).bind(crypto.randomUUID(), id, logStatus).run().catch(e =>
+    console.error('[eta] notification_log insert failed:', e?.message)
+  );
+
+  console.log(`[eta] ${session.name} updated ETA for ${id} → ${expected_out_at} — push: ${pushResult.ok ? 'sent' : pushResult.reason ?? 'failed'}`);
 
   return json({ ok: true, expected_out_at });
 }
