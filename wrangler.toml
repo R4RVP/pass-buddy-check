@@ -36,6 +36,9 @@ APP_NAME      = "PASS Buddy Check"
 APP_URL       = "https://pass-buddy-check.passregioniv.workers.dev"
 SMS_ENABLED   = "false"   # set to "true" in Phase 2 when Twilio is active
 EMAIL_ENABLED = "false"   # set to "true" in Phase 2 when Resend is active
+# Comma-separated E.164 phone numbers granted access to /board and /api/board
+# Add phones here for any FR or admin who needs the active board view
+BOARD_PHONES  = "+19175939143"
 
 # ── Secrets (set via CLI — never commit values to git) ───────────────────────
 #

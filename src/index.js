@@ -17,6 +17,7 @@ import { handleCheckin, handleGetActiveCheckin,
          handleCheckout, handleEtaUpdate }           from './checkin.js';
 import { handleVapidKey, handleSubscribe,
          handleUnsubscribe }                         from './subscribe.js';
+import { handleBoard }                               from './board.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -56,7 +57,7 @@ const routes = [
   ['DELETE', '/api/push/subscribe',           handleUnsubscribe],
 
   // Active board (M8)
-  // ['GET',   '/api/board',                     handleBoard],
+  ['GET',   '/api/board',                     handleBoard],
 
   // Admin — members (M9)
   // ['GET',   '/api/admin/members',             handleAdminListMembers],

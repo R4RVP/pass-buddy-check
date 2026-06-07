@@ -2,6 +2,7 @@
 // JWT session management, OTP generation/verification, Twilio SMS stub
 
 import { normalizePhone, json, err400, err401, err429 } from './utils.js';
+import { hasBoardAccess }                               from './board.js';
 
 const JWT_ALG        = { name: 'HMAC', hash: 'SHA-256' };
 const OTP_TTL_SEC    = 600;   // 10 minutes
@@ -242,6 +243,7 @@ export async function handleMe(request, env) {
     org_level:            m.org_level,
     gov_device_disclosed: m.gov_device_disclosed === 1,
     phone_uncertain:      m.phone_uncertain === 1,
+    board_access:         hasBoardAccess({ phone: m.phone }, env),
   });
 }
 

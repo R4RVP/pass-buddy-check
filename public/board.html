@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a2744">
+  <title>Active Board — PASS Buddy Check</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1a2744;
+      --surface:  #243260;
+      --surface2: #2d3e70;
+      --gold:     #c8a951;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --amber:    #f59e0b;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --border:   rgba(255,255,255,.09);
+      --radius:   1rem;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: max(1.25rem, env(safe-area-inset-top)) 1rem
+               max(1.5rem,  env(safe-area-inset-bottom));
+    }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 960px;
+      margin: 0 auto 1.5rem;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .header-left { display: flex; align-items: center; gap: .75rem; }
+    .brand-badge {
+      background: var(--gold);
+      color: #1a2744;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      padding: .25rem .7rem;
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+    h1 { font-size: 1.25rem; font-weight: 700; }
+    .header-meta { font-size: .78rem; color: var(--muted); text-align: right; }
+    .refresh-dot {
+      display: inline-block;
+      width: .45rem; height: .45rem;
+      background: var(--green);
+      border-radius: 50%;
+      margin-right: .3rem;
+      vertical-align: middle;
+      animation: blink 2.5s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* ── Summary bar ─────────────────────────────────────────── */
+    .summary {
+      display: flex;
+      gap: .65rem;
+      max-width: 960px;
+      margin: 0 auto 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: .38rem 1rem;
+      font-size: .82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .stat-pill.warn { border-color: rgba(239,68,68,.35); color: var(--red); }
+    .stat-dot {
+      width: .45rem; height: .45rem;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+    .stat-dot.red { background: var(--red); }
+
+    /* ── Board grid ──────────────────────────────────────────── */
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── Check-in card ───────────────────────────────────────── */
+    .ci-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: .55rem;
+    }
+    .ci-card.overdue {
+      border-color: rgba(239,68,68,.4);
+    }
+
+    .ci-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .5rem;
+    }
+    .ci-name { font-size: .98rem; font-weight: 700; line-height: 1.25; }
+    .ci-unit { font-size: .72rem; color: var(--muted); margin-top: .1rem; }
+
+    .status-badge {
+      font-size: .6rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: .22rem .6rem;
+      border-radius: 99px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .status-badge.active  {
+      background: rgba(34,197,94,.12);
+      color: var(--green);
+      border: 1px solid rgba(34,197,94,.28);
+    }
+    .status-badge.overdue {
+      background: rgba(239,68,68,.12);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,.28);
+    }
+
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    .ci-row {
+      display: flex;
+      gap: .5rem;
+      font-size: .83rem;
+      align-items: flex-start;
+    }
+    .ci-lbl {
+      font-size: .67rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      min-width: 3.4rem;
+      padding-top: .13rem;
+      flex-shrink: 0;
+    }
+    .ci-val { flex: 1; word-break: break-word; line-height: 1.45; }
+    .ci-val a { color: var(--gold); text-decoration: none; }
+    .ci-val a:hover { text-decoration: underline; }
+
+    .countdown-row {
+      display: flex;
+      align-items: baseline;
+      gap: .45rem;
+    }
+    .countdown-val {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: .02em;
+      line-height: 1;
+    }
+    .countdown-val.overdue { color: var(--red); }
+    .countdown-dir {
+      font-size: .7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .eta-sub {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: -.15rem;
+    }
+
+    .alert-tags {
+      display: flex;
+      gap: .4rem;
+      flex-wrap: wrap;
+    }
+    .alert-tag {
+      font-size: .66rem;
+      font-weight: 600;
+      padding: .17rem .5rem;
+      border-radius: 99px;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .alert-tag.sent { color: var(--amber); border-color: rgba(245,158,11,.3); }
+
+    /* ── Empty state ─────────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 3.5rem 1rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .empty-icon { font-size: 2.8rem; margin-bottom: .75rem; }
+    .empty-state h2 { font-size: 1.1rem; color: var(--text); margin-bottom: .4rem; }
+    .empty-state p  { font-size: .86rem; line-height: 1.55; }
+
+    /* ── Auth / error cards ──────────────────────────────────── */
+    .auth-card {
+      max-width: 420px;
+      margin: 3rem auto;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    .auth-card h2 { font-size: 1.1rem; margin-bottom: .5rem; }
+    .auth-card p  { font-size: .86rem; color: var(--muted); line-height: 1.55; margin-bottom: 1.1rem; }
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: #1a2744;
+      font-weight: 700;
+      font-size: .9rem;
+      border-radius: .5rem;
+      padding: .6rem 1.4rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      font-size: .73rem;
+      color: var(--muted);
+      margin: 2rem auto 0;
+      max-width: 960px;
+    }
+    .footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- rendered by JS -->
+</div>
+
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let _checkins   = [];
+let _lastFetch  = null;
+let _refreshId  = null;
+let _tickId     = null;
+
+const REFRESH_MS = 30_000;
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(method, path) {
+  try {
+    const res = await fetch(path, { method, credentials: 'same-origin' });
+    return await res.json();
+  } catch {
+    return { ok: false, error: 'Network error' };
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+async function init() {
+  const me = await api('GET', '/api/me');
+
+  if (!me.ok || !me.authenticated) {
+    renderAuthError('not-logged-in');
+    return;
+  }
+  if (!me.board_access) {
+    renderAuthError('no-access');
+    return;
+  }
+
+  await loadBoard();
+  _refreshId = setInterval(loadBoard, REFRESH_MS);
+  _tickId    = setInterval(tickCountdowns, 1000);
+}
+
+async function loadBoard() {
+  const res = await api('GET', '/api/board');
+  if (!res.ok) {
+    if (res.error === 'Unauthorized' || res.error === 'Forbidden') {
+      clearInterval(_refreshId);
+      clearInterval(_tickId);
+      renderAuthError(res.error === 'Forbidden' ? 'no-access' : 'not-logged-in');
+    }
+    return;
+  }
+  _checkins  = res.checkins ?? [];
+  _lastFetch = new Date();
+  renderBoard();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderAuthError(type) {
+  const app = document.getElementById('app');
+  if (type === 'not-logged-in') {
+    app.innerHTML = `
+      <div class="auth-card">
+        <div style="font-size:2rem;margin-bottom:.75rem">🔒</div>
+        <h2>Sign in required</h2>
+        <p>Log in via the Buddy Check app first — the board uses the same session cookie.</p>
+        <a href="/" class="btn-primary">Go to Buddy Check</a>
+      </div>`;
+  } else {
+    app.innerHTML = `
+      <div class="auth-card">
+        <div style="font-size:2rem;margin-bottom:.75rem">🚫</div>
+        <h2>Access restricted</h2>
+        <p>The active board is only available to designated FR and admin accounts. Contact your Regional VP if you need access.</p>
+        <a href="/" class="btn-primary">Go to Buddy Check</a>
+      </div>`;
+  }
+}
+
+function renderBoard() {
+  const overdueCount = _checkins.filter(c => c.status === 'overdue').length;
+  const timestamp    = _lastFetch
+    ? `<span class="refresh-dot"></span>Updated ${fmtTime(_lastFetch.toISOString())}`
+    : 'Loading…';
+
+  // Sort: overdue first, then by check-in time (oldest first)
+  const sorted = [..._checkins].sort((a, b) => {
+    if (a.status === 'overdue' && b.status !== 'overdue') return -1;
+    if (b.status === 'overdue' && a.status !== 'overdue') return  1;
+    return new Date(a.checkin_at) - new Date(b.checkin_at);
+  });
+
+  let html = `
+    <header class="header">
+      <div class="header-left">
+        <span class="brand-badge">PASS Region IV</span>
+        <h1>Active Board</h1>
+      </div>
+      <div class="header-meta" id="ts">${timestamp}</div>
+    </header>
+
+    <div class="summary">
+      <div class="stat-pill">
+        <span class="stat-dot"></span>
+        ${_checkins.length} active check-in${_checkins.length !== 1 ? 's' : ''}
+      </div>
+      ${overdueCount > 0
+        ? `<div class="stat-pill warn">
+             <span class="stat-dot red"></span>
+             ${overdueCount} overdue
+           </div>`
+        : ''}
+    </div>`;
+
+  if (_checkins.length === 0) {
+    html += `
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <h2>All clear</h2>
+        <p>No active check-ins at the moment.<br>This board refreshes automatically every 30 seconds.</p>
+      </div>`;
+  } else {
+    html += '<div class="board-grid">';
+    for (const c of sorted) html += cardHtml(c);
+    html += '</div>';
+  }
+
+  html += `
+    <div class="footer">
+      <a href="/">← Member app</a>
+      &nbsp;·&nbsp; Refreshes every 30 s
+    </div>`;
+
+  document.getElementById('app').innerHTML = html;
+}
+
+function cardHtml(c) {
+  const isOverdue = c.status === 'overdue';
+  const diff      = new Date(c.expected_out_at).getTime() - Date.now();
+
+  // Location block
+  let locExtra = '';
+  if (c.w3w_address) {
+    const url = 'https://what3words.com/' + c.w3w_address.replace(/^\/{0,3}/, '');
+    locExtra = `
+      <div class="ci-row" style="margin-top:-.15rem">
+        <span class="ci-lbl" style="min-width:3.4rem">W3W</span>
+        <span class="ci-val" style="color:var(--muted);font-size:.78rem">
+          <a href="${esc(url)}" target="_blank" rel="noopener">${esc(c.w3w_address)}</a>
+        </span>
+      </div>`;
+  }
+  if (c.activity) {
+    locExtra += `
+      <div class="ci-row" style="margin-top:-.15rem">
+        <span class="ci-lbl">Notes</span>
+        <span class="ci-val" style="font-size:.8rem;color:var(--muted)">${esc(c.activity)}</span>
+      </div>`;
+  }
+
+  // Alert tags
+  const tags = [];
+  if (c.reminder_sent_at)    tags.push({ label: '⏱ Reminder sent', cls: 'sent' });
+  if (c.overdue_alerted_at)  tags.push({ label: '⚠ Buddy alerted', cls: 'sent' });
+  if (!tags.length)          tags.push({ label: 'No alerts sent',   cls: '' });
+  const alertsHtml = tags.map(t =>
+    `<span class="alert-tag ${t.cls}">${esc(t.label)}</span>`
+  ).join('');
+
+  const etaUpdNote = c.eta_updated_count > 0
+    ? ` · ETA updated ${c.eta_updated_count}×`
+    : '';
+
+  return `
+    <div class="ci-card ${isOverdue ? 'overdue' : ''}">
+
+      <div class="ci-header">
+        <div>
+          <div class="ci-name">${esc(c.member_name)}</div>
+          ${c.unit_code ? `<div class="ci-unit">${esc(c.unit_code)}</div>` : ''}
+        </div>
+        <span class="status-badge ${isOverdue ? 'overdue' : 'active'}">
+          ${isOverdue ? '⚠ Overdue' : '● Active'}
+        </span>
+      </div>
+
+      <hr class="divider">
+
+      <div class="ci-row">
+        <span class="ci-lbl">Location</span>
+        <span class="ci-val">${esc(c.location_label)}</span>
+      </div>
+      ${locExtra}
+
+      <hr class="divider">
+
+      <div class="ci-row">
+        <span class="ci-lbl">Buddy</span>
+        <span class="ci-val">
+          ${esc(c.buddy_name)}<br>
+          <a href="tel:${esc(c.buddy_phone)}" style="font-size:.8rem">${esc(fmtPhone(c.buddy_phone))}</a>
+          ${c.buddy_email
+            ? `<br><span style="font-size:.75rem;color:var(--muted)">${esc(c.buddy_email)}</span>`
+            : ''}
+        </span>
+      </div>
+
+      <hr class="divider">
+
+      <div class="ci-row" style="align-items:center">
+        <span class="ci-lbl">ETA</span>
+        <div>
+          <div class="countdown-row">
+            <span class="countdown-val ${isOverdue ? 'overdue' : ''}"
+                  data-eta="${esc(c.expected_out_at)}"
+            >${diff < 0 ? '-' + fmtDuration(-diff) : fmtDuration(diff)}</span>
+            <span class="countdown-dir">${diff < 0 ? 'overdue' : 'remaining'}</span>
+          </div>
+          <div class="eta-sub">
+            Return by ${esc(fmtDateTime(c.expected_out_at))}
+            · In since ${esc(fmtTime(c.checkin_at))}${etaUpdNote}
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-tags">${alertsHtml}</div>
+
+    </div>`;
+}
+
+// ── Live countdown tick ────────────────────────────────────────────────────────
+function tickCountdowns() {
+  document.querySelectorAll('.countdown-val[data-eta]').forEach(el => {
+    const diff = new Date(el.dataset.eta).getTime() - Date.now();
+    if (diff < 0) {
+      el.textContent = '-' + fmtDuration(-diff);
+      el.classList.add('overdue');
+    } else {
+      el.textContent = fmtDuration(diff);
+      el.classList.remove('overdue');
+    }
+  });
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function fmtPhone(raw) {
+  const s = String(raw ?? '');
+  if (s.startsWith('+1') && s.length === 12) {
+    const d = s.slice(2);
+    return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+  }
+  return s;
+}
+
+function fmtDuration(ms) {
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000)   / 1000);
+  return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+}
+
+function pad2(n) { return String(Math.max(0, n)).padStart(2, '0'); }
+
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function fmtDateTime(iso) {
+  const d     = new Date(iso);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return fmtTime(iso);
+  return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+       + ' at ' + fmtTime(iso);
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
