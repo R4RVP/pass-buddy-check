@@ -6,7 +6,12 @@
   <meta name="theme-color" content="#1a2744">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="PASS Region IV employee location safety check-in system">
   <title>PASS Buddy Check</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -321,6 +326,70 @@
       color: var(--muted);
       margin-top: .3rem;
     }
+
+    /* ── PWA install banner ───────────────────────────────────────── */
+    .install-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: .9rem max(1rem, env(safe-area-inset-bottom)) .9rem 1rem;
+      transform: translateY(110%);
+      transition: transform .3s ease;
+      z-index: 200;
+      box-shadow: 0 -4px 24px rgba(0,0,0,.45);
+    }
+    .install-banner.visible { transform: translateY(0); }
+    .install-content {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+    .install-icon { font-size: 1.8rem; flex-shrink: 0; line-height: 1; }
+    .install-text { flex: 1; min-width: 0; }
+    .install-title {
+      font-size: .88rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: .2rem;
+    }
+    .install-desc {
+      font-size: .78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .ios-arrow { font-style: normal; }
+    .install-actions {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      flex-shrink: 0;
+    }
+    .btn-install-add {
+      background: var(--gold);
+      color: #1a2744;
+      font-weight: 700;
+      font-size: .82rem;
+      border: none;
+      border-radius: .45rem;
+      padding: .45rem .85rem;
+      cursor: pointer;
+      display: none;
+    }
+    .btn-install-dismiss {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: .2rem .35rem;
+      line-height: 1;
+    }
+    .btn-install-dismiss:hover { color: var(--text); }
   </style>
 </head>
 <body>
@@ -496,6 +565,27 @@
      Toast notification
      ═══════════════════════════════════════════════════════════════════ -->
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     PWA Install Banner
+     iOS: shows Share → Add to Home Screen instructions
+     Android Chrome: uses beforeinstallprompt event
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="install-banner" class="install-banner" role="complementary" aria-label="Install app">
+  <div class="install-content">
+    <div class="install-icon">📲</div>
+    <div class="install-text">
+      <div class="install-title">Install Buddy Check</div>
+      <div class="install-desc" id="install-desc">
+        <!-- populated by JS -->
+      </div>
+    </div>
+    <div class="install-actions">
+      <button id="btn-install-add" class="btn-install-add">Add</button>
+      <button id="btn-install-dismiss" class="btn-install-dismiss" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -1048,6 +1138,77 @@ function urlB64ToUint8Array(b64) {
   const raw     = atob(base64);
   return Uint8Array.from(raw, c => c.charCodeAt(0));
 }
+
+// ── PWA Install Banner ────────────────────────────────────────────────────────
+// iOS: no automatic prompt — we show manual Add to Home Screen instructions.
+// Android Chrome: captures beforeinstallprompt and presents a native install button.
+
+const INSTALL_DISMISSED_KEY = 'bc-install-dismissed';
+let _installPrompt = null;
+
+// Android Chrome: capture deferred prompt before it auto-dismisses
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  if (!localStorage.getItem(INSTALL_DISMISSED_KEY)) {
+    showInstallBanner('android');
+  }
+});
+
+// Android Chrome: once installed, hide the banner permanently
+window.addEventListener('appinstalled', () => {
+  dismissInstallBanner(true);
+  _installPrompt = null;
+});
+
+function showInstallBanner(type) {
+  const banner = document.getElementById('install-banner');
+  const desc   = document.getElementById('install-desc');
+  const addBtn = document.getElementById('btn-install-add');
+  if (!banner || !desc) return;
+
+  if (type === 'android') {
+    desc.textContent = 'Add to your home screen for the best experience and push notifications.';
+    addBtn.style.display = 'block';
+  } else {
+    // iOS: step-by-step inline instructions
+    desc.innerHTML =
+      'Tap <strong>Share</strong> <span class="ios-arrow">⬆</span> then ' +
+      '<strong>Add to Home Screen</strong> to enable notifications.';
+    addBtn.style.display = 'none';
+  }
+
+  banner.classList.add('visible');
+}
+
+document.getElementById('btn-install-add').addEventListener('click', async () => {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  const { outcome } = await _installPrompt.userChoice;
+  _installPrompt = null;
+  if (outcome === 'accepted') dismissInstallBanner(true);
+});
+
+document.getElementById('btn-install-dismiss').addEventListener('click', () =>
+  dismissInstallBanner(false)
+);
+
+function dismissInstallBanner(permanent) {
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.classList.remove('visible');
+  if (permanent) localStorage.setItem(INSTALL_DISMISSED_KEY, '1');
+}
+
+// iOS detection: show if iOS Safari, not standalone, not previously dismissed
+(function checkIOSInstall() {
+  const isIOS        = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true ||
+                       window.matchMedia('(display-mode: standalone)').matches;
+  if (isIOS && !isStandalone && !localStorage.getItem(INSTALL_DISMISSED_KEY)) {
+    // Short delay so it doesn't flash on initial load
+    setTimeout(() => showInstallBanner('ios'), 4000);
+  }
+})();
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 init();
