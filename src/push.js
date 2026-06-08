@@ -185,7 +185,11 @@ export async function sendPush(subscription, notification, env) {
   const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = env;
 
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY || !VAPID_SUBJECT) {
-    console.warn('[push] VAPID secrets not configured — skipping push');
+    const missing = [];
+    if (!VAPID_PUBLIC_KEY)  missing.push('VAPID_PUBLIC_KEY');
+    if (!VAPID_PRIVATE_KEY) missing.push('VAPID_PRIVATE_KEY');
+    if (!VAPID_SUBJECT)     missing.push('VAPID_SUBJECT');
+    console.warn('[push] VAPID secrets missing:', missing.join(', '));
     return { ok: false, reason: 'vapid_not_configured' };
   }
 
@@ -223,7 +227,7 @@ export async function sendPush(subscription, notification, env) {
         'Content-Encoding': 'aes128gcm',
         'Authorization':    `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`,
         'TTL':              '86400',
-        'Urgency':          'normal',
+        'Urgency':          'high',
       },
       body,
     });

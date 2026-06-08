@@ -5,11 +5,12 @@
  *
  * Each active check-in gets its own DO instance, keyed by member_id.
  * Scheduling:
- *   Alarm 1 (reminder):  expected_out_at − 15 minutes → push to member
- *   Alarm 2 (overdue):   expected_out_at + grace_minutes → push to member + SMS to buddy
+ *   Alarm 1 (reminder):     expected_out_at − 15 minutes → push to member
+ *   Alarm 2 (checkin_due):  expected_out_at              → push to member ("time to check out")
+ *   Alarm 3 (overdue):      expected_out_at + grace_minutes → push to member + SMS to buddy
  *
  * Because Cloudflare Durable Objects support one alarm at a time, we chain them:
- * the reminder alarm fires first, sends the push, then schedules the overdue alarm.
+ * each alarm fires, sends its notification, then schedules the next phase.
  */
 
 import { sendPush } from '../push.js';
@@ -63,24 +64,31 @@ export class CheckinAlarmDO {
     await this.state.storage.put('graceMinutes',  graceMinutes);
 
     // Determine which phase fires first
-    const reminderMs  = expectedMs - 15 * 60 * 1000;
-    const targetPhase = reminderMs > now ? 'reminder' : 'overdue';
-    const nextAlarm   = targetPhase === 'reminder'
-      ? reminderMs
-      : expectedMs + graceMinutes * 60 * 1000;
+    const reminderMs   = expectedMs - 15 * 60 * 1000;
+    const checkinDueMs = expectedMs;
+    const overdueMs    = expectedMs + graceMinutes * 60 * 1000;
 
-    await this.state.storage.put('phase', targetPhase);
-
-    if (nextAlarm > now) {
-      await this.state.storage.setAlarm(nextAlarm);
-      console.log(`[AlarmDO] Scheduled ${checkinId}: phase=${targetPhase} at ${new Date(nextAlarm).toISOString()}`);
-      return Response.json({ ok: true, checkinId, nextAlarm: new Date(nextAlarm).toISOString() });
+    let targetPhase, nextAlarm;
+    if (reminderMs > now) {
+      targetPhase = 'reminder';
+      nextAlarm   = reminderMs;
+    } else if (checkinDueMs > now) {
+      targetPhase = 'checkin_due';
+      nextAlarm   = checkinDueMs;
+    } else if (overdueMs > now) {
+      targetPhase = 'overdue';
+      nextAlarm   = overdueMs;
+    } else {
+      // All windows have already passed — fire overdue immediately
+      console.warn(`[AlarmDO] Check-in ${checkinId} is already past overdue window — firing immediately`);
+      await this.fireOverdue(checkinId);
+      return Response.json({ ok: true, checkinId, immediate: true });
     }
 
-    // Both windows have already passed — fire overdue immediately
-    console.warn(`[AlarmDO] Check-in ${checkinId} is already past overdue window — firing immediately`);
-    await this.fireOverdue(checkinId);
-    return Response.json({ ok: true, checkinId, immediate: true });
+    await this.state.storage.put('phase', targetPhase);
+    await this.state.storage.setAlarm(nextAlarm);
+    console.log(`[AlarmDO] Scheduled ${checkinId}: phase=${targetPhase} at ${new Date(nextAlarm).toISOString()}`);
+    return Response.json({ ok: true, checkinId, nextAlarm: new Date(nextAlarm).toISOString() });
   }
 
   // ── Alarm handler ──────────────────────────────────────────────────────────
@@ -98,30 +106,108 @@ export class CheckinAlarmDO {
 
     console.log(`[AlarmDO] Alarm fired: checkin=${checkinId} phase=${phase}`);
 
+    const expectedMs = new Date(expectedOutAt).getTime();
+
     if (phase === 'reminder') {
       await this.fireReminder(checkinId);
 
-      // Chain: schedule the overdue alarm
-      const overdueMs = new Date(expectedOutAt).getTime() + graceMinutes * 60 * 1000;
-      const now       = Date.now();
-
-      if (overdueMs > now) {
-        await this.state.storage.put('phase', 'overdue');
-        await this.state.storage.setAlarm(overdueMs);
-        console.log(`[AlarmDO] Chained overdue alarm for ${checkinId} at ${new Date(overdueMs).toISOString()}`);
+      // Chain: schedule checkin_due at T=0
+      const dueMs = expectedMs;
+      const now   = Date.now();
+      if (dueMs > now) {
+        await this.state.storage.put('phase', 'checkin_due');
+        await this.state.storage.setAlarm(dueMs);
+        console.log(`[AlarmDO] Chained checkin_due alarm for ${checkinId} at ${new Date(dueMs).toISOString()}`);
       } else {
-        // Overdue window already passed while reminder was in flight
-        await this.fireOverdue(checkinId);
+        await this.chainFromCheckinDue(checkinId, expectedMs, graceMinutes);
       }
+
+    } else if (phase === 'checkin_due') {
+      await this.fireCheckinDue(checkinId);
+      await this.chainFromCheckinDue(checkinId, expectedMs, graceMinutes);
+
     } else {
       await this.fireOverdue(checkinId);
     }
+  }
+
+  // ── chainFromCheckinDue ────────────────────────────────────────────────────
+  // Schedules (or immediately fires) the overdue alarm after checkin_due has run.
+  async chainFromCheckinDue(checkinId, expectedMs, graceMinutes) {
+    const overdueMs = expectedMs + graceMinutes * 60 * 1000;
+    const now       = Date.now();
+    if (overdueMs > now) {
+      await this.state.storage.put('phase', 'overdue');
+      await this.state.storage.setAlarm(overdueMs);
+      console.log(`[AlarmDO] Chained overdue alarm for ${checkinId} at ${new Date(overdueMs).toISOString()}`);
+    } else {
+      await this.fireOverdue(checkinId);
+    }
+  }
+
+  // ── fireCheckinDue ─────────────────────────────────────────────────────────
+  // Fires at T=0 (expected_out_at). Sends "time to check out" push to member.
+  async fireCheckinDue(checkinId) {
+    const env = this.env;
+
+    const { results } = await env.DB.prepare(`
+      SELECT c.id, c.status, c.location_label,
+             m.id   AS member_id,
+             m.name AS member_name,
+             m.push_sub
+      FROM   checkins c
+      JOIN   members  m ON m.id = c.member_id
+      WHERE  c.id = ?
+    `).bind(checkinId).all();
+
+    if (!results.length) {
+      console.warn(`[AlarmDO] fireCheckinDue: check-in ${checkinId} not found`);
+      return;
+    }
+
+    const row = results[0];
+
+    if (row.status !== 'active') {
+      console.log(`[AlarmDO] fireCheckinDue: ${checkinId} status=${row.status} — skipping`);
+      return;
+    }
+
+    const subscription = row.push_sub ? JSON.parse(row.push_sub) : null;
+    const pushResult   = await sendPush(subscription, {
+      title: '⏰ Time to check out',
+      body:  `Your return window from "${row.location_label}" has ended. Check out or extend your time.`,
+      tag:   'buddy-check-due',
+      url:   '/',
+    }, env);
+
+    if (pushResult.gone) {
+      await env.DB.prepare(`UPDATE members SET push_sub = NULL WHERE id = ?`)
+        .bind(row.member_id).run();
+    }
+
+    const logStatus = pushResult.ok                  ? 'sent'
+      : pushResult.reason === 'vapid_not_configured' ? 'stubbed'
+      : pushResult.reason === 'no_subscription'      ? 'stubbed'
+      : 'failed';
+
+    // Logged as 'reminder' — closest existing event type without a schema migration
+    await env.DB.prepare(`
+      INSERT INTO notification_log
+        (id, checkin_id, recipient_type, channel, event, status, sent_at)
+      VALUES (?, ?, 'member', 'push', 'reminder', ?, datetime('now'))
+    `).bind(crypto.randomUUID(), checkinId, logStatus).run().catch(e =>
+      console.error('[AlarmDO] fireCheckinDue notification_log insert failed:', e?.message)
+    );
+
+    console.log(`[AlarmDO] fireCheckinDue: ${row.member_name} @ "${row.location_label}" — push: ${pushResult.ok ? 'sent' : (pushResult.reason ?? 'failed')}`);
   }
 
   // ── fireReminder ───────────────────────────────────────────────────────────
   // Fires ~15 minutes before ETA. Sends a heads-up push to the member.
   async fireReminder(checkinId) {
     const env = this.env;
+    console.log('[AlarmDO] fireReminder env VAPID check — PUBLIC:', !!env.VAPID_PUBLIC_KEY,
+      'PRIVATE:', !!env.VAPID_PRIVATE_KEY, 'SUBJECT:', !!env.VAPID_SUBJECT);
 
     // Load check-in + member data from D1
     const { results } = await env.DB.prepare(`

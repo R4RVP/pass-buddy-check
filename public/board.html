@@ -32,13 +32,13 @@
                max(1.5rem,  env(safe-area-inset-bottom));
     }
 
-    /* ── Header ──────────────────────────────────────────────── */
+    /* ── Header ──────────────────────────────────────────── */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       max-width: 960px;
-      margin: 0 auto 1.5rem;
+      margin: 0 auto 1.25rem;
       flex-wrap: wrap;
       gap: .75rem;
     }
@@ -46,16 +46,16 @@
     .brand-badge {
       background: var(--gold);
       color: #1a2744;
-      font-size: .65rem;
+      font-size: .68rem;
       font-weight: 700;
       letter-spacing: .09em;
       text-transform: uppercase;
-      padding: .25rem .7rem;
+      padding: .28rem .75rem;
       border-radius: 99px;
       flex-shrink: 0;
     }
-    h1 { font-size: 1.25rem; font-weight: 700; }
-    .header-meta { font-size: .78rem; color: var(--muted); text-align: right; }
+    h1 { font-size: 1.35rem; font-weight: 700; }
+    .header-meta { font-size: .82rem; color: var(--muted); text-align: right; }
     .refresh-dot {
       display: inline-block;
       width: .45rem; height: .45rem;
@@ -67,144 +67,166 @@
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-    /* ── Summary bar ─────────────────────────────────────────── */
+    /* ── Summary bar ─────────────────────────────────────── */
     .summary {
       display: flex;
       gap: .65rem;
       max-width: 960px;
-      margin: 0 auto 1.5rem;
+      margin: 0 auto 1.25rem;
       flex-wrap: wrap;
     }
     .stat-pill {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 99px;
-      padding: .38rem 1rem;
-      font-size: .82rem;
+      padding: .4rem 1.1rem;
+      font-size: .86rem;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: .4rem;
     }
     .stat-pill.warn { border-color: rgba(239,68,68,.35); color: var(--red); }
-    .stat-dot {
-      width: .45rem; height: .45rem;
-      border-radius: 50%;
-      background: var(--green);
-      flex-shrink: 0;
-    }
+    .stat-dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--green); flex-shrink: 0; }
     .stat-dot.red { background: var(--red); }
 
-    /* ── Board grid ──────────────────────────────────────────── */
-    .board-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-      gap: 1rem;
+    /* ── Board list ──────────────────────────────────────── */
+    .board-list {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
       max-width: 960px;
       margin: 0 auto;
     }
 
-    /* ── Check-in card ───────────────────────────────────────── */
+    /* ── Check-in card ───────────────────────────────────── */
     .ci-card {
       background: var(--surface);
       border-radius: var(--radius);
-      padding: 1.2rem;
       border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: .55rem;
+      overflow: hidden;
+      transition: border-color .15s;
     }
-    .ci-card.overdue {
-      border-color: rgba(239,68,68,.4);
+    .ci-card.overdue { border-color: rgba(239,68,68,.4); }
+    .ci-card.expanded { border-color: rgba(255,255,255,.18); }
+
+    /* ── Summary row (always visible, clickable) ─────────── */
+    .ci-summary {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem 1.1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .ci-summary:hover { background: rgba(255,255,255,.03); }
+
+    .ci-summary-left { flex: 1; min-width: 0; }
+    .ci-name { font-size: 1.05rem; font-weight: 700; line-height: 1.25; }
+    .ci-loc-brief {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-top: .2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .ci-header {
+    .ci-summary-right {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: .5rem;
+      align-items: center;
+      gap: .65rem;
+      flex-shrink: 0;
     }
-    .ci-name { font-size: .98rem; font-weight: 700; line-height: 1.25; }
-    .ci-unit { font-size: .72rem; color: var(--muted); margin-top: .1rem; }
+    .countdown-sm {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: .02em;
+      min-width: 5.5ch;
+      text-align: right;
+    }
+    .countdown-sm.overdue { color: var(--red); }
 
     .status-badge {
-      font-size: .6rem;
+      font-size: .64rem;
       font-weight: 700;
       letter-spacing: .06em;
       text-transform: uppercase;
-      padding: .22rem .6rem;
+      padding: .24rem .65rem;
       border-radius: 99px;
       flex-shrink: 0;
       white-space: nowrap;
     }
-    .status-badge.active  {
-      background: rgba(34,197,94,.12);
-      color: var(--green);
-      border: 1px solid rgba(34,197,94,.28);
-    }
-    .status-badge.overdue {
-      background: rgba(239,68,68,.12);
-      color: var(--red);
-      border: 1px solid rgba(239,68,68,.28);
-    }
+    .status-badge.active  { background: rgba(34,197,94,.12);  color: var(--green); border: 1px solid rgba(34,197,94,.28); }
+    .status-badge.overdue { background: rgba(239,68,68,.12);  color: var(--red);   border: 1px solid rgba(239,68,68,.28); }
 
-    .divider { border: none; border-top: 1px solid var(--border); }
+    .ci-chevron {
+      font-size: 1rem;
+      color: var(--muted);
+      transition: transform .2s;
+      flex-shrink: 0;
+      line-height: 1;
+      opacity: .7;
+    }
+    .ci-card.expanded .ci-chevron { transform: rotate(90deg); }
+
+    /* ── Detail section (hidden until expanded) ──────────── */
+    .ci-detail {
+      display: none;
+      padding: 0 1.1rem 1rem;
+    }
+    .ci-card.expanded .ci-detail { display: block; }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin-bottom: .75rem; }
 
     .ci-row {
       display: flex;
-      gap: .5rem;
-      font-size: .83rem;
+      gap: .55rem;
+      font-size: .9rem;
       align-items: flex-start;
+      margin-bottom: .55rem;
     }
     .ci-lbl {
-      font-size: .67rem;
+      font-size: .7rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .05em;
       color: var(--muted);
-      min-width: 3.4rem;
-      padding-top: .13rem;
+      min-width: 3.5rem;
+      padding-top: .15rem;
       flex-shrink: 0;
     }
-    .ci-val { flex: 1; word-break: break-word; line-height: 1.45; }
+    .ci-val { flex: 1; word-break: break-word; line-height: 1.5; }
     .ci-val a { color: var(--gold); text-decoration: none; }
     .ci-val a:hover { text-decoration: underline; }
 
-    .countdown-row {
-      display: flex;
-      align-items: baseline;
-      gap: .45rem;
-    }
-    .countdown-val {
+    .eta-block { margin-bottom: .55rem; }
+    .countdown-full {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 1.55rem;
+      font-size: 1.65rem;
       font-weight: 700;
       color: var(--green);
       letter-spacing: .02em;
       line-height: 1;
     }
-    .countdown-val.overdue { color: var(--red); }
-    .countdown-dir {
-      font-size: .7rem;
+    .countdown-full.overdue { color: var(--red); }
+    .eta-dir {
+      font-size: .72rem;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: .05em;
+      margin-left: .3rem;
+      vertical-align: middle;
     }
-    .eta-sub {
-      font-size: .72rem;
-      color: var(--muted);
-      margin-top: -.15rem;
-    }
+    .eta-sub { font-size: .78rem; color: var(--muted); margin-top: .25rem; }
 
-    .alert-tags {
-      display: flex;
-      gap: .4rem;
-      flex-wrap: wrap;
-    }
+    .alert-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .25rem; }
     .alert-tag {
-      font-size: .66rem;
+      font-size: .68rem;
       font-weight: 600;
-      padding: .17rem .5rem;
+      padding: .18rem .55rem;
       border-radius: 99px;
       background: var(--surface2);
       color: var(--muted);
@@ -212,7 +234,7 @@
     }
     .alert-tag.sent { color: var(--amber); border-color: rgba(245,158,11,.3); }
 
-    /* ── Empty state ─────────────────────────────────────────── */
+    /* ── Empty state ─────────────────────────────────────── */
     .empty-state {
       text-align: center;
       color: var(--muted);
@@ -221,10 +243,10 @@
       margin: 0 auto;
     }
     .empty-icon { font-size: 2.8rem; margin-bottom: .75rem; }
-    .empty-state h2 { font-size: 1.1rem; color: var(--text); margin-bottom: .4rem; }
-    .empty-state p  { font-size: .86rem; line-height: 1.55; }
+    .empty-state h2 { font-size: 1.15rem; color: var(--text); margin-bottom: .4rem; }
+    .empty-state p  { font-size: .9rem; line-height: 1.55; }
 
-    /* ── Auth / error cards ──────────────────────────────────── */
+    /* ── Auth / error cards ──────────────────────────────── */
     .auth-card {
       max-width: 420px;
       margin: 3rem auto;
@@ -235,7 +257,7 @@
       box-shadow: 0 8px 32px rgba(0,0,0,.4);
     }
     .auth-card h2 { font-size: 1.1rem; margin-bottom: .5rem; }
-    .auth-card p  { font-size: .86rem; color: var(--muted); line-height: 1.55; margin-bottom: 1.1rem; }
+    .auth-card p  { font-size: .9rem; color: var(--muted); line-height: 1.55; margin-bottom: 1.1rem; }
     .btn-primary {
       display: inline-block;
       background: var(--gold);
@@ -249,10 +271,10 @@
       cursor: pointer;
     }
 
-    /* ── Footer ──────────────────────────────────────────────── */
+    /* ── Footer ──────────────────────────────────────────── */
     .footer {
       text-align: center;
-      font-size: .73rem;
+      font-size: .76rem;
       color: var(--muted);
       margin: 2rem auto 0;
       max-width: 960px;
@@ -261,9 +283,7 @@
   </style>
 </head>
 <body>
-<div id="app">
-  <!-- rendered by JS -->
-</div>
+<div id="app"><!-- rendered by JS --></div>
 
 <script>
 'use strict';
@@ -273,6 +293,7 @@ let _checkins   = [];
 let _lastFetch  = null;
 let _refreshId  = null;
 let _tickId     = null;
+const _openIds  = new Set();   // checkin IDs that are expanded
 
 const REFRESH_MS = 30_000;
 
@@ -288,16 +309,23 @@ async function api(method, path) {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function init() {
-  const me = await api('GET', '/api/me');
+  // Click delegation for expand/collapse — set up once
+  document.addEventListener('click', e => {
+    const card = e.target.closest('.ci-card[data-id]');
+    if (!card) return;
+    const id = card.dataset.id;
+    if (_openIds.has(id)) {
+      _openIds.delete(id);
+      card.classList.remove('expanded');
+    } else {
+      _openIds.add(id);
+      card.classList.add('expanded');
+    }
+  });
 
-  if (!me.ok || !me.authenticated) {
-    renderAuthError('not-logged-in');
-    return;
-  }
-  if (!me.board_access) {
-    renderAuthError('no-access');
-    return;
-  }
+  const me = await api('GET', '/api/me');
+  if (!me.ok || !me.authenticated) { renderAuthError('not-logged-in'); return; }
+  if (!me.board_access && !me.admin_access) { renderAuthError('no-access'); return; }
 
   await loadBoard();
   _refreshId = setInterval(loadBoard, REFRESH_MS);
@@ -335,7 +363,7 @@ function renderAuthError(type) {
       <div class="auth-card">
         <div style="font-size:2rem;margin-bottom:.75rem">🚫</div>
         <h2>Access restricted</h2>
-        <p>The active board is only available to designated FR and admin accounts. Contact your Regional VP if you need access.</p>
+        <p>The active board is only available to designated FR and admin accounts.</p>
         <a href="/" class="btn-primary">Go to Buddy Check</a>
       </div>`;
   }
@@ -347,11 +375,11 @@ function renderBoard() {
     ? `<span class="refresh-dot"></span>Updated ${fmtTime(_lastFetch.toISOString())}`
     : 'Loading…';
 
-  // Sort: overdue first, then by check-in time (oldest first)
+  // Sort: overdue first, then by ETA ascending (soonest expiring at top)
   const sorted = [..._checkins].sort((a, b) => {
     if (a.status === 'overdue' && b.status !== 'overdue') return -1;
     if (b.status === 'overdue' && a.status !== 'overdue') return  1;
-    return new Date(a.checkin_at) - new Date(b.checkin_at);
+    return new Date(a.expected_out_at) - new Date(b.expected_out_at);
   });
 
   let html = `
@@ -381,10 +409,10 @@ function renderBoard() {
       <div class="empty-state">
         <div class="empty-icon">✅</div>
         <h2>All clear</h2>
-        <p>No active check-ins at the moment.<br>This board refreshes automatically every 30 seconds.</p>
+        <p>No active check-ins at the moment.<br>Refreshes automatically every 30 seconds.</p>
       </div>`;
   } else {
-    html += '<div class="board-grid">';
+    html += '<div class="board-list">';
     for (const c of sorted) html += cardHtml(c);
     html += '</div>';
   }
@@ -392,41 +420,53 @@ function renderBoard() {
   html += `
     <div class="footer">
       <a href="/">← Member app</a>
-      &nbsp;·&nbsp; Refreshes every 30 s
+      &nbsp;·&nbsp; Refreshes every 30 s &nbsp;·&nbsp; Tap a row to expand
     </div>`;
 
   document.getElementById('app').innerHTML = html;
+
+  // Restore previously open cards
+  _openIds.forEach(id => {
+    const el = document.querySelector(`.ci-card[data-id="${CSS.escape(id)}"]`);
+    if (el) el.classList.add('expanded');
+  });
 }
 
 function cardHtml(c) {
   const isOverdue = c.status === 'overdue';
   const diff      = new Date(c.expected_out_at).getTime() - Date.now();
+  const diffSign  = diff < 0 ? '-' : '';
+  const diffAbs   = Math.abs(diff);
 
-  // Location block
-  let locExtra = '';
+  // W3W row
+  let w3wRow = '';
   if (c.w3w_address) {
-    const url = 'https://what3words.com/' + c.w3w_address.replace(/^\/{0,3}/, '');
-    locExtra = `
-      <div class="ci-row" style="margin-top:-.15rem">
-        <span class="ci-lbl" style="min-width:3.4rem">W3W</span>
-        <span class="ci-val" style="color:var(--muted);font-size:.78rem">
-          <a href="${esc(url)}" target="_blank" rel="noopener">${esc(c.w3w_address)}</a>
+    const words = c.w3w_address.replace(/^\/{0,3}/, '');
+    const url   = 'https://what3words.com/' + words;
+    w3wRow = `
+      <div class="ci-row">
+        <span class="ci-lbl">W3W</span>
+        <span class="ci-val" style="font-family:monospace">
+          <a href="${esc(url)}" target="_blank" rel="noopener">///&thinsp;${esc(words)}</a>
         </span>
       </div>`;
   }
+
+  // Activity / notes row
+  let actRow = '';
   if (c.activity) {
-    locExtra += `
-      <div class="ci-row" style="margin-top:-.15rem">
+    actRow = `
+      <div class="ci-row">
         <span class="ci-lbl">Notes</span>
-        <span class="ci-val" style="font-size:.8rem;color:var(--muted)">${esc(c.activity)}</span>
+        <span class="ci-val" style="color:var(--muted)">${esc(c.activity)}</span>
       </div>`;
   }
 
   // Alert tags
   const tags = [];
-  if (c.reminder_sent_at)    tags.push({ label: '⏱ Reminder sent', cls: 'sent' });
-  if (c.overdue_alerted_at)  tags.push({ label: '⚠ Buddy alerted', cls: 'sent' });
-  if (!tags.length)          tags.push({ label: 'No alerts sent',   cls: '' });
+  if (c.reminder_sent_at)   tags.push({ label: '⏱ Reminder sent', cls: 'sent' });
+  if (c.overdue_alerted_at) tags.push({ label: '⚠ Buddy alerted', cls: 'sent' });
+  if (!tags.length)         tags.push({ label: 'No alerts sent',   cls: '' });
   const alertsHtml = tags.map(t =>
     `<span class="alert-tag ${t.cls}">${esc(t.label)}</span>`
   ).join('');
@@ -435,79 +475,82 @@ function cardHtml(c) {
     ? ` · ETA updated ${c.eta_updated_count}×`
     : '';
 
+  const buddyEmail = c.buddy_email
+    ? `<br><span style="font-size:.78rem;color:var(--muted)">${esc(c.buddy_email)}</span>`
+    : '';
+
   return `
-    <div class="ci-card ${isOverdue ? 'overdue' : ''}">
+    <div class="ci-card ${isOverdue ? 'overdue' : ''}" data-id="${esc(c.id)}">
 
-      <div class="ci-header">
-        <div>
+      <div class="ci-summary">
+        <div class="ci-summary-left">
           <div class="ci-name">${esc(c.member_name)}</div>
-          ${c.unit_code ? `<div class="ci-unit">${esc(c.unit_code)}</div>` : ''}
+          <div class="ci-loc-brief">${esc(c.location_label)}${c.w3w_address ? ' · ///' + esc(c.w3w_address.replace(/^\/{0,3}/,'')) : ''}</div>
         </div>
-        <span class="status-badge ${isOverdue ? 'overdue' : 'active'}">
-          ${isOverdue ? '⚠ Overdue' : '● Active'}
-        </span>
+        <div class="ci-summary-right">
+          <span class="status-badge ${isOverdue ? 'overdue' : 'active'}">
+            ${isOverdue ? '⚠ Overdue' : '● Active'}
+          </span>
+          <span class="countdown-sm ${isOverdue ? 'overdue' : ''}"
+                data-eta="${esc(c.expected_out_at)}"
+          >${diffSign}${fmtDuration(diffAbs)}</span>
+          <span class="ci-chevron">›</span>
+        </div>
       </div>
 
-      <hr class="divider">
+      <div class="ci-detail">
+        <hr class="divider">
 
-      <div class="ci-row">
-        <span class="ci-lbl">Location</span>
-        <span class="ci-val">${esc(c.location_label)}</span>
-      </div>
-      ${locExtra}
+        <div class="ci-row">
+          <span class="ci-lbl">Location</span>
+          <span class="ci-val">${esc(c.location_label)}</span>
+        </div>
+        ${w3wRow}
+        ${actRow}
 
-      <hr class="divider">
+        <div class="ci-row">
+          <span class="ci-lbl">Buddy</span>
+          <span class="ci-val">
+            ${esc(c.buddy_name)}<br>
+            <a href="tel:${esc(c.buddy_phone)}">${esc(fmtPhone(c.buddy_phone))}</a>
+            ${buddyEmail}
+          </span>
+        </div>
 
-      <div class="ci-row">
-        <span class="ci-lbl">Buddy</span>
-        <span class="ci-val">
-          ${esc(c.buddy_name)}<br>
-          <a href="tel:${esc(c.buddy_phone)}" style="font-size:.8rem">${esc(fmtPhone(c.buddy_phone))}</a>
-          ${c.buddy_email
-            ? `<br><span style="font-size:.75rem;color:var(--muted)">${esc(c.buddy_email)}</span>`
-            : ''}
-        </span>
-      </div>
+        <div class="ci-row">
+          <span class="ci-lbl">Check-in</span>
+          <span class="ci-val">${esc(fmtTime(c.checkin_at))}</span>
+        </div>
 
-      <hr class="divider">
-
-      <div class="ci-row" style="align-items:center">
-        <span class="ci-lbl">ETA</span>
-        <div>
-          <div class="countdown-row">
-            <span class="countdown-val ${isOverdue ? 'overdue' : ''}"
-                  data-eta="${esc(c.expected_out_at)}"
-            >${diff < 0 ? '-' + fmtDuration(-diff) : fmtDuration(diff)}</span>
-            <span class="countdown-dir">${diff < 0 ? 'overdue' : 'remaining'}</span>
-          </div>
+        <div class="eta-block">
+          <span class="countdown-full ${isOverdue ? 'overdue' : ''}"
+                data-eta-full="${esc(c.expected_out_at)}"
+          >${diffSign}${fmtDuration(diffAbs)}</span>
+          <span class="eta-dir">${isOverdue ? 'overdue' : 'remaining'}</span>
           <div class="eta-sub">
-            Return by ${esc(fmtDateTime(c.expected_out_at))}
-            · In since ${esc(fmtTime(c.checkin_at))}${etaUpdNote}
+            Return by ${esc(fmtDateTime(c.expected_out_at))}${etaUpdNote}
           </div>
         </div>
-      </div>
 
-      <div class="alert-tags">${alertsHtml}</div>
+        <div class="alert-tags">${alertsHtml}</div>
+      </div>
 
     </div>`;
 }
 
-// ── Live countdown tick ────────────────────────────────────────────────────────
+// ── Live countdown tick ───────────────────────────────────────────────────────
 function tickCountdowns() {
-  document.querySelectorAll('.countdown-val[data-eta]').forEach(el => {
-    const diff = new Date(el.dataset.eta).getTime() - Date.now();
-    if (diff < 0) {
-      el.textContent = '-' + fmtDuration(-diff);
-      el.classList.add('overdue');
-    } else {
-      el.textContent = fmtDuration(diff);
-      el.classList.remove('overdue');
-    }
+  document.querySelectorAll('[data-eta],[data-eta-full]').forEach(el => {
+    const eta  = el.dataset.eta ?? el.dataset.etaFull;
+    const diff = new Date(eta).getTime() - Date.now();
+    const sign = diff < 0 ? '-' : '';
+    el.textContent = sign + fmtDuration(Math.abs(diff));
+    if (diff < 0) el.classList.add('overdue');
+    else          el.classList.remove('overdue');
   });
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
-
 function esc(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')

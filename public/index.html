@@ -16,16 +16,17 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #1a2744;
-      --surface:  #243260;
-      --surface2: #2d3e70;
-      --gold:     #c8a951;
-      --green:    #22c55e;
-      --red:      #ef4444;
-      --text:     #f1f5f9;
-      --muted:    #94a3b8;
-      --border:   rgba(255,255,255,.09);
-      --radius:   1rem;
+      --bg:         #1a2744;
+      --surface:    #243260;
+      --surface2:   #2d3e70;
+      --gold:       #c8a951;
+      --green:      #22c55e;
+      --pass-green: #007A33;   /* Official PASS brand green — confirmed 2026-06-07 */
+      --red:        #ef4444;
+      --text:       #f1f5f9;
+      --muted:      #94a3b8;
+      --border:     rgba(255,255,255,.09);
+      --radius:     1rem;
     }
 
     body {
@@ -124,6 +125,30 @@
       padding-right: 2.25rem;
     }
 
+    /* Return-time quick-select + split date/time */
+    .eta-quick-row {
+      display: flex; gap: .4rem; margin-bottom: .75rem;
+    }
+    .btn-eta-quick {
+      flex: 1; padding: .55rem .2rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      color: var(--muted);
+      font-size: .88rem; font-weight: 600;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-eta-quick.active { border-color: var(--gold); color: var(--gold); }
+    .eta-split-row { display: flex; gap: .6rem; align-items: flex-end; margin-bottom: .25rem; }
+    .eta-time-primary { flex: 1; }
+    .eta-time-primary input {
+      font-size: 1.5rem; padding: .6rem .75rem;
+      text-align: center; letter-spacing: .04em;
+    }
+    .eta-date-secondary { flex: 0 0 auto; }
+    .eta-date-secondary input { font-size: .82rem; padding: .55rem .5rem; }
+
     /* Location row with geo button */
     .loc-row { display: flex; gap: .5rem; }
     .loc-row input { flex: 1; }
@@ -206,15 +231,198 @@
     .disclosure-body strong { color: var(--text); }
 
     /* ── Active session ───────────────────────────────────────────── */
-    .card-active { text-align: center; }
-    .card-active.overdue { border: 2px solid rgba(239,68,68,.35); }
+    body:has(#screen-active.active) { background: #111; }
+    #screen-active.active { background: #111; }
+    #screen-active.active .card-active { background: #1c1c1e; }
+    #screen-active .member-strip { background: #111; border-top-color: rgba(255,255,255,.07); }
+    .card-active { text-align: center; border: 2px solid rgba(0,122,51,.55); }  /* steady green — good state */
+    .card-active.overdue      { border-color: rgba(245,158,11,.7); }            /* amber — grace period */
+    .card-active.overdue-full { border-color: rgba(239,68,68,.75); }            /* red — 30+ min overdue */
+
+    /* Active screen: fixed overlay fills exact viewport, card stops at footer top */
+    #screen-active.active {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      padding: max(1.5rem, env(safe-area-inset-top)) 1rem calc(135px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #screen-active.active .card-active {
+      width: calc(100% - 10px);
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding-top: 1.375rem;
+      padding-bottom: 1rem;
+      margin-bottom: 0;
+    }
+    /* Center unit: badge + clock + slide — asymmetric padding shifts center upward */
+    .active-center {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: .75rem 0 calc(3rem + 10px);
+    }
+    /* Footer — fixed so it never moves when details expand */
+    #screen-active .member-strip {
+      position: fixed;
+      bottom: 0;
+      left: 6px; right: 6px;
+      background: var(--surface);
+      border: 1px solid rgba(0,122,51,.3);
+      border-radius: 1.25rem;
+      box-shadow: 0 -8px 24px rgba(0,0,0,.45);
+      z-index: 20;
+      padding: .4rem 1.5rem max(.6rem, env(safe-area-inset-bottom));
+    }
+
+    /* W3W collapse trigger — always visible at top of active card */
+    .active-w3w-hdr { margin-bottom: .5rem; }
+    .w3w-header-row { display: flex; gap: .4rem; align-items: center; }
+    .w3w-header-row .w3w-trigger { flex: 1; }
+    .pin-col {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .2rem;
+    }
+    .pin-lbl {
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+    }
+    .btn-drop-pin {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: .6rem;
+      color: var(--muted);
+      font-size: 1.15rem;
+      width: 44px;
+      align-self: stretch;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+      line-height: 1;
+    }
+    .btn-drop-pin:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-drop-pin:disabled { opacity: .5; cursor: default; }
+    .btn-drop-pin.pinned { border-color: var(--pass-green); color: var(--pass-green); }
+    .w3w-trigger {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: .65rem;
+      padding: .7rem 1rem;
+      color: var(--text);
+      cursor: pointer;
+      gap: .5rem;
+      text-align: left;
+    }
+    .w3w-trigger:hover { border-color: var(--gold); }
+    .w3w-trigger-addr {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-family: monospace;
+      font-size: .95rem;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .w3w-chevron {
+      color: var(--muted);
+      font-size: .85rem;
+      transition: transform .25s;
+      flex-shrink: 0;
+    }
+
+    /* Collapsible details — hidden by default */
+    .active-details {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .35s ease;
+    }
+    .active-details.expanded { max-height: 600px; }
+
+    /* Taglines above badge — fade + collapse when details flyout is open */
+    .active-taglines {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 1.75rem;
+      font-size: .98rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.9;
+      letter-spacing: .01em;
+      overflow: hidden;
+      max-height: 120px;
+      opacity: 1;
+      transition: opacity .3s ease, max-height .35s ease, margin-bottom .35s ease;
+    }
+    .active-details.expanded ~ .active-center .active-taglines {
+      opacity: 0;
+      max-height: 0;
+      margin-bottom: 0;
+      pointer-events: none;
+    }
+    /* When flyout open: anchor content to top, collapse asymmetric padding */
+    .active-details.expanded ~ .active-center {
+      justify-content: flex-start;
+      padding-top: 1.25rem;
+      padding-bottom: 1rem;
+    }
+    .active-details.expanded ~ .active-center .countdown-block { margin: .4rem 0; }
+    .active-details.expanded ~ .active-center .slide-track    { margin: .75rem 0 .25rem; }
+    /* Card scrolls when flyout is open so slide bar is always reachable */
+    .card-active.details-open { overflow-y: auto; }
+
+    /* Active badge — centered above clock */
+    #active-badge {
+      background: var(--pass-green);
+      color: #fff;
+      font-size: 1.05rem;
+      padding: .65rem 1.6rem;
+    }
+
+    /* Buddy contact pill buttons */
+    .buddy-btn {
+      display: inline-block;
+      background: var(--surface);
+      border: 1.5px solid var(--gold);
+      color: var(--gold);
+      font-size: 1rem;
+      font-weight: 700;
+      padding: .5rem 1.5rem;
+      border-radius: 99px;
+      text-decoration: none;
+      letter-spacing: .04em;
+      transition: background .15s, color .15s;
+    }
+    .buddy-btn:hover, .buddy-btn:active {
+      background: var(--gold);
+      color: #1a2744;
+    }
 
     .status-dot {
       display: inline-block;
-      width: .5rem; height: .5rem;
+      width: .55rem; height: .55rem;
       background: var(--green);
       border-radius: 50%;
-      margin-right: .4rem;
+      margin-right: .5rem;
       vertical-align: middle;
       animation: blink 2s infinite;
     }
@@ -223,39 +431,39 @@
     .active-info {
       background: var(--surface2);
       border-radius: .75rem;
-      padding: .8rem 1rem;
+      padding: .85rem 1.1rem;
       margin: 1rem 0;
       text-align: left;
     }
     .info-row {
       display: flex;
-      gap: .6rem;
-      font-size: .88rem;
-      padding: .35rem 0;
+      gap: .75rem;
+      font-size: 1.08rem;
+      padding: .6rem 0;
     }
     .info-row + .info-row { border-top: 1px solid var(--border); }
     .info-lbl {
       color: var(--muted);
-      font-size: .72rem;
+      font-size: .82rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .05em;
-      min-width: 3.75rem;
-      padding-top: .12rem;
+      min-width: 5rem;
+      padding-top: .15rem;
     }
-    .info-val { flex: 1; word-break: break-word; }
+    .info-val { flex: 1; word-break: break-word; line-height: 1.5; }
 
-    .countdown-block { margin: 1.25rem 0; }
+    .countdown-block { margin: 1.2rem 0; }
     .countdown-label {
-      font-size: .72rem;
+      font-size: 1rem;
       text-transform: uppercase;
       letter-spacing: .07em;
       color: var(--muted);
-      margin-bottom: .3rem;
+      margin-bottom: .35rem;
     }
     .countdown {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 3.25rem;
+      font-size: 3.75rem;
       font-weight: 700;
       color: var(--green);
       letter-spacing: .04em;
@@ -263,18 +471,103 @@
     }
     .countdown.overdue { color: var(--red); animation: flash .75s infinite; }
     @keyframes flash { 0%,100%{opacity:1} 50%{opacity:.35} }
-    .countdown-sub { font-size: .78rem; color: var(--muted); margin-top: .4rem; }
+    @keyframes border-pulse-warn {
+      0%, 100% { border-color: rgba(0,122,51,.6); }
+      50%       { border-color: rgba(255,255,255,.8); }
+    }
+    .card-active.warning { animation: border-pulse-warn 1.5s ease-in-out infinite; }
+    @keyframes border-pulse-crit {
+      0%, 100% { border-color: rgba(245,158,11,.85); }
+      50%       { border-color: rgba(255,255,255,.9); }
+    }
+    .card-active.critical { animation: border-pulse-crit 1s ease-in-out infinite; }
+    .countdown-sub { font-size: 1.05rem; color: var(--muted); margin-top: .5rem; }
+
+    /* ── Slide-to-checkout ──────────────────────────────────────────── */
+    .slide-track {
+      position: relative;
+      width: calc(100% - 5px);
+      height: 63px;
+      background: rgba(0,122,51,.18);
+      border-radius: 99px;
+      overflow: visible;
+      margin: 1.5rem 0 1rem;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .slide-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 0;
+      background: var(--pass-green);
+      pointer-events: none;
+      border-radius: 99px;
+    }
+    .slide-handle {
+      position: absolute;
+      top: 4px; left: 9px;
+      width: 55px; height: 55px;
+      background: transparent;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2;
+      box-shadow: none;
+      cursor: grab;
+      touch-action: none;
+    }
+    .slide-handle:active { cursor: grabbing; }
+    .slide-logo { width: 78px; height: auto; pointer-events: none; display: block; }
+    .slide-label {
+      position: absolute;
+      top: 50%; left: 0; right: 0;
+      transform: translateY(-50%);
+      text-align: center;
+      padding-left: 30px;
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ── Check-in logo tap ───────────────────────────────────────────── */
+    .checkin-logo-btn {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: .0625rem 0 .25rem;
+      cursor: pointer;
+      text-align: center;
+    }
+    .checkin-logo-img {
+      height: 64px; width: auto;
+      display: block; margin: 0 auto;
+      opacity: .85;
+      transition: opacity .1s, transform .1s;
+    }
+    .checkin-logo-btn:active .checkin-logo-img { opacity: 1; transform: scale(.92); }
+    .checkin-logo-lbl {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-top: .45rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
 
     .btn-checkout {
       display: block;
       width: 100%;
-      background: var(--green);
-      color: #0a1a0a;
-      font-size: 1.05rem;
+      background: var(--pass-green);
+      color: #fff;
+      font-size: 1.15rem;
       font-weight: 700;
       border: none;
       border-radius: .75rem;
-      padding: 1rem;
+      padding: 1.1rem;
       cursor: pointer;
       margin-top: .5rem;
       transition: background .2s, transform .1s, opacity .15s;
@@ -283,23 +576,78 @@
     .btn-checkout:active  { transform: scale(.98); }
     .btn-checkout:disabled { opacity: .5; cursor: not-allowed; }
 
-    .eta-row { display: flex; gap: .5rem; margin-top: .75rem; }
+    .eta-row { display: flex; gap: .5rem; margin-top: .85rem; }
     .btn-eta {
       flex: 1;
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: .5rem;
       color: var(--text);
-      font-size: .85rem;
+      font-size: .95rem;
       font-weight: 600;
-      padding: .65rem .5rem;
+      padding: .75rem .5rem;
       cursor: pointer;
       transition: border-color .15s;
     }
     .btn-eta:hover { border-color: var(--gold); }
     .btn-eta:disabled { opacity: .5; cursor: not-allowed; }
+    .eta-time-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      color: var(--text);
+      font-size: .95rem;
+      font-weight: 600;
+      padding: .65rem .75rem;
+      cursor: pointer;
+    }
 
     /* ── Toast ────────────────────────────────────────────────────── */
+    /* ── Notification permission modal ───────────────────────────── */
+    .notif-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 0 max(1.5rem, env(safe-area-inset-bottom));
+    }
+    .notif-overlay.visible { display: flex; }
+    .notif-sheet {
+      background: var(--surface2);
+      border-radius: 1.25rem 1.25rem 1rem 1rem;
+      padding: 1.75rem 1.5rem 1.5rem;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      box-shadow: 0 -8px 32px rgba(0,0,0,.5);
+    }
+    .notif-icon  { font-size: 2.25rem; margin-bottom: .75rem; }
+    .notif-title { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; }
+    .notif-desc  { font-size: .85rem; color: var(--muted); line-height: 1.5; margin-bottom: 1.25rem; }
+    .notif-btns  { display: flex; flex-direction: column; gap: .65rem; }
+    .btn-notif-enable {
+      background: var(--gold);
+      color: #1a2744;
+      border: none;
+      border-radius: .75rem;
+      font-size: .95rem;
+      font-weight: 700;
+      padding: .85rem;
+      cursor: pointer;
+    }
+    .btn-notif-later {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: .85rem;
+      cursor: pointer;
+      padding: .4rem;
+    }
+
     .toast {
       position: fixed;
       bottom: max(1.5rem, env(safe-area-inset-bottom));
@@ -315,10 +663,26 @@
       box-shadow: 0 4px 16px rgba(0,0,0,.45);
       opacity: 0;
       pointer-events: none;
-      transition: opacity .2s;
+      transition: opacity .25s;
       z-index: 100;
     }
     .toast.visible { opacity: 1; }
+    .toast.prominent {
+      bottom: auto;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: #1a3d2b;
+      border: 2px solid rgba(0,122,51,.7);
+      border-radius: 1.25rem;
+      padding: 1.5rem 2.25rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      white-space: pre-line;
+      text-align: center;
+      max-width: 80vw;
+      line-height: 1.5;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    }
 
     /* ── Member display in checkin header ─────────────────────────── */
     .member-tag {
@@ -411,6 +775,17 @@
       <button type="submit" class="btn-primary">Send Code</button>
     </form>
     <p id="err-login" class="error-msg"></p>
+    <div style="margin-top:1.5rem;border-top:1px solid var(--border);padding-top:1.25rem;text-align:center">
+      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem">
+        PASS Buddy Check is a member-run safety benefit — available exclusively to PASS members.
+        Employee to employee. Not a management tool.
+      </p>
+      <a href="https://passnational.org" target="_blank" rel="noopener"
+         style="display:inline-block;background:var(--gold);color:#1a2744;font-weight:700;font-size:.85rem;
+                border-radius:.5rem;padding:.5rem 1.25rem;text-decoration:none">
+        Not a member? Join PASS →
+      </a>
+    </div>
   </div>
 </div>
 
@@ -472,7 +847,8 @@
     <form id="form-checkin" novalidate>
 
       <fieldset>
-        <legend>Your Buddy</legend>
+        <legend>Safety Buddy</legend>
+        <p style="font-size:.8rem;color:var(--muted);margin:.25rem 0 .75rem">If you don't check out on time, your buddy is alerted.</p>
         <label for="input-buddy-name">Name <span class="req">*</span></label>
         <input id="input-buddy-name" type="text" autocomplete="name"
                placeholder="Full name" required>
@@ -494,7 +870,8 @@
         </div>
         <p id="geo-status" class="geo-status"></p>
         <label for="input-w3w">what3words <span class="opt">(optional)</span></label>
-        <input id="input-w3w" type="text" placeholder="///word.word.word">
+        <input id="input-w3w" type="text" inputmode="text" autocomplete="off"
+               placeholder="word.word.word or use pin button">
       </fieldset>
 
       <fieldset>
@@ -512,8 +889,22 @@
 
       <fieldset>
         <legend>Return Time</legend>
-        <label for="input-eta">Expected return <span class="req">*</span></label>
-        <input id="input-eta" type="datetime-local" required>
+        <div class="eta-quick-row">
+          <button type="button" class="btn-eta-quick" data-mins="60">+1 hr</button>
+          <button type="button" class="btn-eta-quick" data-mins="120">+2 hrs</button>
+          <button type="button" class="btn-eta-quick" data-mins="180">+3 hrs</button>
+          <button type="button" class="btn-eta-quick" data-mins="240">+4 hrs</button>
+        </div>
+        <div class="eta-split-row">
+          <div class="eta-time-primary">
+            <label for="input-eta-time">Return time <span class="req">*</span></label>
+            <input id="input-eta-time" type="time" required>
+          </div>
+          <div class="eta-date-secondary">
+            <label for="input-eta-date">Date</label>
+            <input id="input-eta-date" type="date" required>
+          </div>
+        </div>
         <label for="input-grace">Alert delay if not back by then</label>
         <select id="input-grace">
           <option value="15">15 minutes</option>
@@ -524,8 +915,23 @@
       </fieldset>
 
       <p id="err-checkin" class="error-msg"></p>
-      <button type="submit" class="btn-primary">Check In</button>
+
+      <button type="button" class="checkin-logo-btn" id="checkin-logo-btn">
+        <img src="/pass-logo-white.png" alt="PASS" class="checkin-logo-img">
+        <p class="checkin-logo-lbl">Tap to check in</p>
+      </button>
+      <button type="submit" class="btn-link" style="display:block;width:100%;margin-top:.35rem;font-size:.82rem;opacity:.55">Check In</button>
     </form>
+
+    <div id="push-prompt-checkin" style="display:none;text-align:center;margin-top:1.25rem">
+      <button id="btn-enable-push-checkin" type="button" class="btn-link" style="margin:0 auto">
+        🔔 Enable push notifications
+      </button>
+      <p style="font-size:.75rem;color:var(--muted);margin-top:.3rem;line-height:1.4">
+        Get alerted when your ETA is approaching or if you're overdue.
+      </p>
+    </div>
+
     <div id="admin-links" style="display:none;text-align:center;margin-top:1rem;font-size:.8rem;color:var(--muted)">
       <a id="board-link" href="/board"
          style="color:var(--muted);text-decoration:underline;text-underline-offset:2px;display:none">
@@ -545,29 +951,118 @@
 <div id="screen-active" class="screen">
   <div class="card card-active" id="card-active">
 
-    <div class="badge badge-ok" id="active-badge">
-      <span class="status-dot"></span>CHECKED IN
-    </div>
-
-    <div class="active-info" id="active-info">
+    <!-- W3W trigger — always visible, tap to expand details -->
+    <div class="active-w3w-hdr" id="active-w3w-hdr">
       <!-- populated by renderActive() -->
     </div>
 
-    <div class="countdown-block">
-      <div class="countdown-label">Time remaining</div>
-      <div class="countdown" id="countdown">--:--:--</div>
-      <div class="countdown-sub" id="countdown-sub"></div>
+    <!-- Collapsible details (Location, Buddy, In since) -->
+    <div class="active-details" id="active-details">
+      <!-- populated by renderActive() -->
     </div>
 
-    <button id="btn-checkout" class="btn-checkout">Check Out</button>
-
-    <div class="eta-row">
-      <button class="btn-eta" data-hours="1">+1 hr</button>
-      <button class="btn-eta" data-hours="2">+2 hrs</button>
-      <button class="btn-eta" data-hours="4">+4 hrs</button>
+    <!-- Floating center unit: taglines + badge + clock + slide -->
+    <div class="active-center">
+      <div class="active-taglines">
+        Member-run<br>
+        Employee to employee<br>
+        Not a management tool
+      </div>
+      <div class="badge badge-ok" id="active-badge">
+        <span class="status-dot"></span>CHECKED IN
+      </div>
+      <div class="countdown-block">
+        <div class="countdown-label">Time remaining</div>
+        <div class="countdown" id="countdown">--:--:--</div>
+        <div class="countdown-sub" id="countdown-sub"></div>
+      </div>
+      <div class="slide-track" id="slide-track">
+        <div class="slide-fill" id="slide-fill"></div>
+        <div class="slide-handle" id="slide-handle">
+          <img src="/pass-logo-white.png" alt="PASS" class="slide-logo">
+        </div>
+        <span class="slide-label" id="slide-label">SLIDE TO CHECK OUT</span>
+      </div>
     </div>
 
     <p id="err-active" class="error-msg"></p>
+
+  </div><!-- end card-active -->
+
+  <!-- Footer strip: ETA, admin links, identity, W3W credit -->
+  <div class="member-strip">
+
+    <!-- Panel label -->
+    <div style="text-align:center;margin-bottom:.3rem">
+      <span class="pin-lbl">Update ETA</span>
+    </div>
+
+    <!-- ETA extend buttons -->
+    <div id="eta-row" class="eta-row" style="margin-top:0;margin-bottom:.4rem">
+      <button class="btn-eta" data-hours="0.25">+15</button>
+      <button class="btn-eta" data-hours="0.5">+30</button>
+      <button class="btn-eta" data-hours="1">+60</button>
+      <button class="btn-eta" id="btn-eta-custom">Custom</button>
+    </div>
+
+    <!-- Custom time picker (shown when Custom is tapped) -->
+    <div id="eta-custom-row" class="eta-row" style="display:none;margin-top:0;margin-bottom:.4rem">
+      <input type="time" id="eta-custom-time" class="eta-time-input">
+      <button id="btn-eta-save" class="btn-eta" style="flex:0 0 auto;min-width:58px">Save</button>
+      <button id="btn-eta-cancel" class="btn-eta" style="flex:0 0 auto;min-width:42px;color:var(--muted)">✕</button>
+    </div>
+
+    <!-- Admin / board links -->
+    <div id="admin-links-active" style="display:none;text-align:center;margin-bottom:.6rem;font-size:.88rem;color:var(--muted)">
+      <a id="board-link-active" href="/board"
+         style="color:var(--muted);text-decoration:underline;text-underline-offset:2px;display:none">
+        Active Board →
+      </a>
+      <span id="admin-sep-active" style="display:none"> &nbsp;·&nbsp; </span>
+      <a id="admin-link-active" href="/admin"
+         style="color:var(--muted);text-decoration:underline;text-underline-offset:2px;display:none">
+        Admin Panel →
+      </a>
+    </div>
+
+    <!-- Push prompt -->
+    <div id="push-prompt-active" style="display:none;text-align:center;margin-bottom:.5rem">
+      <button id="btn-enable-push-active" type="button" class="btn-link" style="margin:0 auto">
+        🔔 Enable push notifications
+      </button>
+    </div>
+
+    <!-- W3W credit -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.35rem">
+      <a href="https://what3words.com" target="_blank" rel="noopener"
+         style="display:inline-flex;align-items:center;text-decoration:none;opacity:.65">
+        <img src="/w3w-logo-hz.svg" alt="what3words" height="18" style="display:block">
+      </a>
+      <span style="font-size:.8rem;color:var(--muted);opacity:.75">location precision powered by what3words</span>
+    </div>
+
+  </div><!-- end member-strip -->
+
+</div><!-- end screen-active -->
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Notification permission modal (bottom sheet)
+     Shows automatically when push is not subscribed; "Enable" taps
+     trigger requestPushPermission() inside a click handler (iOS req).
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="notif-overlay" class="notif-overlay" role="dialog" aria-modal="true"
+     aria-labelledby="notif-title">
+  <div class="notif-sheet">
+    <div class="notif-icon">🔔</div>
+    <div class="notif-title" id="notif-title">Enable push alerts</div>
+    <p class="notif-desc">
+      Get notified 15 minutes before your return time, and alerted if you're overdue.
+      Your buddy is contacted only if you don't respond.
+    </p>
+    <div class="notif-btns">
+      <button id="btn-notif-enable" class="btn-notif-enable">Enable Notifications</button>
+      <button id="btn-notif-later" class="btn-notif-later">Not now</button>
+    </div>
   </div>
 </div>
 
@@ -585,7 +1080,7 @@
   <div class="install-content">
     <div class="install-icon">📲</div>
     <div class="install-text">
-      <div class="install-title">Install Buddy Check</div>
+      <div class="install-title">Install PASS Buddy</div>
       <div class="install-desc" id="install-desc">
         <!-- populated by JS -->
       </div>
@@ -612,6 +1107,7 @@ const state = {
   geoLon:          null,
   countdownId:     null,
   checkoutPending: false,
+  pushSubscribed:  false,
   checkoutTimer:   null,
 };
 
@@ -767,19 +1263,36 @@ document.getElementById('btn-disclosure-ok').addEventListener('click', async () 
 
 // ── Check-in form ─────────────────────────────────────────────────────────────
 
+const W3W_PROXY = 'https://pass-w3w.passregioniv.workers.dev';
+
 document.getElementById('btn-geo').addEventListener('click', () => {
   const status = document.getElementById('geo-status');
   if (!navigator.geolocation) {
     status.textContent = 'Geolocation not available on this device.';
     return;
   }
-  status.textContent = 'Getting location…';
+  status.textContent = 'Getting location… (tap Allow if iOS asks)';
   navigator.geolocation.getCurrentPosition(
-    pos => {
+    async pos => {
       state.geoLat = pos.coords.latitude;
       state.geoLon = pos.coords.longitude;
       const acc = Math.round(pos.coords.accuracy);
-      status.textContent = `Location captured (±${acc} m)`;
+
+      // Look up the what3words address for these coordinates
+      try {
+        const r = await fetch(
+          `${W3W_PROXY}/api/w3w/convert-to-3wa?coordinates=${state.geoLat},${state.geoLon}`
+        );
+        const d = await r.json();
+        if (d.words) {
+          document.getElementById('input-w3w').value = d.words;
+          status.textContent = `📍 ///${d.words}  (±${acc} m)`;
+        } else {
+          status.textContent = `Location captured (±${acc} m) — W3W lookup failed`;
+        }
+      } catch {
+        status.textContent = `Location captured (±${acc} m)`;
+      }
     },
     err => {
       state.geoLat = null;
@@ -790,6 +1303,28 @@ document.getElementById('btn-geo').addEventListener('click', () => {
     },
     { timeout: 12000, maximumAge: 60000, enableHighAccuracy: false }
   );
+});
+
+// ── what3words field normalization ───────────────────────────────────────────
+// Strips leading ///, lowercases, replaces spaces with dots.
+// Call on the raw input value; returns clean "word.word.word" (no /// prefix).
+function normalizeW3W(raw) {
+  return raw.trim()
+    .replace(/^\/+/, '')   // strip leading slashes
+    .toLowerCase()
+    .replace(/\s+/g, '.')  // spaces → dots
+    .replace(/\.{2,}/g, '.') // collapse multiple dots
+    .replace(/[^a-z.]/g, ''); // strip non-letter, non-dot characters
+}
+
+document.getElementById('input-w3w').addEventListener('input', function () {
+  const pos = this.selectionStart;
+  const normalized = normalizeW3W(this.value);
+  if (normalized !== this.value) {
+    this.value = normalized;
+    // Restore cursor, clamped to new length
+    this.setSelectionRange(Math.min(pos, normalized.length), Math.min(pos, normalized.length));
+  }
 });
 
 function initCheckinForm() {
@@ -809,6 +1344,16 @@ function initCheckinForm() {
     container.style.display = hasBrd ? 'block' : 'none';
   }
 
+  // Pre-fill buddy fields from last check-in (stored in localStorage)
+  try {
+    const lastBuddy = JSON.parse(localStorage.getItem('lastBuddy') || 'null');
+    if (lastBuddy?.name) {
+      document.getElementById('input-buddy-name').value  = lastBuddy.name;
+      document.getElementById('input-buddy-phone').value = lastBuddy.phone || '';
+      document.getElementById('input-buddy-email').value = lastBuddy.email || '';
+    }
+  } catch { /* localStorage unavailable */ }
+
   // Default ETA: now + 2 hours, rounded up to nearest 15 min
   const now = new Date();
   const rem = now.getMinutes() % 15;
@@ -816,14 +1361,23 @@ function initCheckinForm() {
   now.setSeconds(0, 0);
   const eta = new Date(now.getTime() + 2 * 3600_000);
 
-  const etaEl = document.getElementById('input-eta');
-  etaEl.value = toDatetimeLocal(eta);
-  etaEl.min   = toDatetimeLocal(new Date(Date.now() + 5 * 60_000));
+  const _p = n => String(n).padStart(2, '0');
+  const _fmtD = d => `${d.getFullYear()}-${_p(d.getMonth()+1)}-${_p(d.getDate())}`;
+  const _fmtT = d => `${_p(d.getHours())}:${_p(d.getMinutes())}`;
+  document.getElementById('input-eta-time').value = _fmtT(eta);
+  document.getElementById('input-eta-date').value = _fmtD(eta);
+  document.getElementById('input-eta-date').min   = _fmtD(new Date());
+  document.querySelectorAll('.btn-eta-quick').forEach(b =>
+    b.classList.toggle('active', b.dataset.mins === '120'));
 
   // Reset geo status
   document.getElementById('geo-status').textContent = '';
   state.geoLat = null;
   state.geoLon = null;
+
+  // Sync push prompt and auto-show modal if needed
+  updatePushUI(state.pushSubscribed);
+  maybeShowNotifModal();
 }
 
 document.getElementById('form-checkin').addEventListener('submit', async e => {
@@ -833,10 +1387,13 @@ document.getElementById('form-checkin').addEventListener('submit', async e => {
   const buddyPhone = val('input-buddy-phone');
   const buddyEmail = val('input-buddy-email') || null;
   const location   = val('input-location');
-  const w3w        = val('input-w3w') || null;
+  const rawW3W     = val('input-w3w');
+  const w3w        = rawW3W ? normalizeW3W(rawW3W) || null : null;
   const actType    = document.getElementById('input-act-type').value;
   const activity   = val('input-activity') || null;
-  const etaInput   = document.getElementById('input-eta').value;
+  const etaDateVal = document.getElementById('input-eta-date').value;
+  const etaTimeVal = document.getElementById('input-eta-time').value;
+  const etaInput   = etaDateVal && etaTimeVal ? `${etaDateVal}T${etaTimeVal}` : '';
   const grace      = Number(document.getElementById('input-grace').value);
 
   // Client-side guards
@@ -876,6 +1433,11 @@ document.getElementById('form-checkin').addEventListener('submit', async e => {
     return;
   }
 
+  // Remember buddy for next check-in
+  try {
+    localStorage.setItem('lastBuddy', JSON.stringify({ name: buddyName, phone: buddyPhone, email: buddyEmail }));
+  } catch { /* storage unavailable */ }
+
   state.checkin = res.checkin;
   renderActive();
   show('active');
@@ -889,48 +1451,159 @@ function renderActive() {
   const badge = document.getElementById('active-badge');
 
   // Reset overdue state
-  card.classList.remove('overdue');
+  card.classList.remove('overdue', 'overdue-full', 'warning', 'critical');
   badge.className = 'badge badge-ok';
   badge.innerHTML = '<span class="status-dot"></span>CHECKED IN';
 
-  // Populate info block
-  let w3wHtml = '';
-  if (c.w3w_address) {
-    w3wHtml = `<div class="info-row">
-      <span class="info-lbl">W3W</span>
-      <span class="info-val" style="color:var(--muted);font-size:.85rem">${esc(c.w3w_address)}</span>
-    </div>`;
-  }
-  let actHtml = '';
-  if (c.activity) {
-    actHtml = `<div class="info-row">
-      <span class="info-lbl">Activity</span>
-      <span class="info-val">${esc(c.activity)}</span>
-    </div>`;
-  }
+  // Reset slide bar for fresh check-in cycle
+  if (window._resetSlide) window._resetSlide();
 
-  document.getElementById('active-info').innerHTML = `
-    <div class="info-row">
+  // W3W SVG icon (reused in header)
+  const w3wSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="120.5 120.5 362 362" width="18" height="18" style="flex-shrink:0;border-radius:3px">
+    <rect x="120.5" y="120.5" width="362" height="362" fill="#fff"/>
+    <path fill="#e11f26" d="M278.7291,380.4346a11.3119,11.3119,0,0,1-10.7209-14.8758l45.2011-135.6035a11.3015,11.3015,0,0,1,21.4419,7.151L289.45,372.71A11.3011,11.3011,0,0,1,278.7291,380.4346Z"/>
+    <path fill="#e11f26" d="M210.9274,380.4346a11.3119,11.3119,0,0,1-10.721-14.8758l45.2012-135.6035a11.3015,11.3015,0,0,1,21.4419,7.151L221.6483,372.71A11.3012,11.3012,0,0,1,210.9274,380.4346Z"/>
+    <path fill="#e11f26" d="M346.5308,380.4346A11.3119,11.3119,0,0,1,335.81,365.5588l45.2012-135.6035a11.3014,11.3014,0,0,1,21.4418,7.151L357.2518,372.71A11.3012,11.3012,0,0,1,346.5308,380.4346Z"/>
+  </svg>`;
+
+  // Resolve W3W display — prefer current_w3w (pin drop) over original
+  const origWords    = c.w3w_address  ? c.w3w_address.replace(/^\/+/, '')  : null;
+  const currentWords = c.current_w3w  ? c.current_w3w.replace(/^\/+/, '')  : null;
+  const displayW3W   = currentWords || origWords;
+  const locationMoved = currentWords && origWords && currentWords !== origWords;
+
+  // Populate W3W header row (trigger + pin button)
+  const w3wHdr = document.getElementById('active-w3w-hdr');
+
+  const triggerContent = displayW3W
+    ? `<span class="w3w-trigger-addr">
+        ///${esc(displayW3W)}${locationMoved
+          ? ' <span style="font-size:.7rem;color:var(--gold);margin-left:.2rem">↑</span>'
+          : ''}
+      </span>`
+    : `<span class="w3w-trigger-addr" style="font-family:inherit">${esc(c.location_label)}</span>`;
+
+  w3wHdr.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+      <span class="pin-lbl">w3w Location &amp; Buddy Info</span>
+      <span class="pin-lbl">Update</span>
+    </div>
+    <div class="w3w-header-row">
+      <button class="w3w-trigger" id="w3w-trigger">
+        ${triggerContent}
+        <span class="w3w-chevron" id="w3w-chevron">▾</span>
+      </button>
+      <button class="btn-drop-pin${locationMoved ? ' pinned' : ''}" id="btn-drop-pin"
+              title="Update my location" aria-label="Update location">📍</button>
+    </div>`;
+
+  // Populate collapsible details
+  const details = document.getElementById('active-details');
+  details.classList.remove('expanded');
+
+  const locationRow = `<div class="info-row">
       <span class="info-lbl">Location</span>
       <span class="info-val">${esc(c.location_label)}</span>
-    </div>
-    ${w3wHtml}
-    <div class="info-row">
-      <span class="info-lbl">Buddy</span>
-      <span class="info-val">
-        ${esc(c.buddy_name)} &middot;
-        <a href="tel:${esc(c.buddy_phone)}" style="color:var(--gold)">${fmtPhone(c.buddy_phone)}</a>
-      </span>
-    </div>
-    ${actHtml}
-    <div class="info-row">
-      <span class="info-lbl">Since</span>
-      <span class="info-val">${fmtTime(c.checkin_at)}</span>
-    </div>
-  `;
+    </div>`;
 
-  document.getElementById('countdown-sub').textContent =
-    'Return by ' + fmtDateTime(c.expected_out_at);
+  const actHtml = c.activity
+    ? `<div class="info-row">
+        <span class="info-lbl">Activity</span>
+        <span class="info-val">${esc(c.activity)}</span>
+      </div>`
+    : '';
+
+  details.innerHTML = `
+    <div class="active-info" style="margin-top:.5rem">
+      ${locationRow}
+      <div class="info-row">
+        <span class="info-lbl">Buddy</span>
+        <span class="info-val">
+          ${esc(c.buddy_name)}
+          <div style="margin-top:.6rem">
+            <a href="tel:${esc(c.buddy_phone)}" class="buddy-btn">Call</a>
+            &nbsp;
+            <a href="sms:${esc(c.buddy_phone)}" class="buddy-btn">Text</a>
+          </div>
+        </span>
+      </div>
+      ${actHtml}
+      <div class="info-row">
+        <span class="info-lbl">In since</span>
+        <span class="info-val">${fmtTime(c.checkin_at)}</span>
+      </div>
+    </div>`;
+
+  // Collapse/expand toggle
+  document.getElementById('w3w-trigger').addEventListener('click', () => {
+    const chevron = document.getElementById('w3w-chevron');
+    details.classList.toggle('expanded');
+    const isOpen = details.classList.contains('expanded');
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+    const cardEl = document.getElementById('card-active');
+    if (cardEl) cardEl.classList.toggle('details-open', isOpen);
+  });
+
+  // Drop a Pin handler
+  document.getElementById('btn-drop-pin').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-drop-pin');
+    btn.disabled = true;
+    btn.textContent = '⏳';
+
+    try {
+      if (!navigator.geolocation) throw Object.assign(new Error(), { code: -1 });
+
+      const position = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true, timeout: 10_000, maximumAge: 0,
+        })
+      );
+
+      const { latitude: lat, longitude: lon } = position.coords;
+      const res = await api('PATCH', `/api/checkin/${state.checkin.id}/location`, { lat, lon });
+
+      if (res.ok) {
+        state.checkin.current_w3w         = res.current_w3w;
+        state.checkin.location_updated_at = res.location_updated_at;
+        renderActive();
+        showToast(res.current_w3w ? `📍 ///${res.current_w3w}` : 'Location updated.');
+      } else if (!res._expired) {
+        showToast('Server error saving location — try again.');
+        const b = document.getElementById('btn-drop-pin');
+        if (b) { b.disabled = false; b.textContent = '📍'; }
+      }
+    } catch (e) {
+      const msg = e?.code === -1  ? 'Location not available on this device.'
+        : e?.code === 1           ? 'Location access denied — check browser settings.'
+        : e?.code === 2           ? 'Location unavailable. Try again outside.'
+        : e?.code === 3           ? 'Location timed out. Try again.'
+        : 'Could not get your location.';
+      showToast(msg);
+      const b = document.getElementById('btn-drop-pin');
+      if (b) { b.disabled = false; b.textContent = '📍'; }
+    }
+  });
+
+  document.getElementById('countdown-sub').textContent = 'DUE ' + fmtTime(c.expected_out_at);
+
+  // Admin / board links for authorized members
+  const m = state.member;
+  const hasBrd = m?.board_access || m?.admin_access;
+  const hasAdm = m?.admin_access;
+  const linksEl   = document.getElementById('admin-links-active');
+  const boardEl   = document.getElementById('board-link-active');
+  const adminEl   = document.getElementById('admin-link-active');
+  const sepEl     = document.getElementById('admin-sep-active');
+  if (linksEl && boardEl && adminEl && sepEl) {
+    boardEl.style.display = hasBrd ? 'inline' : 'none';
+    adminEl.style.display = hasAdm ? 'inline' : 'none';
+    sepEl.style.display   = (hasBrd && hasAdm) ? 'inline' : 'none';
+    linksEl.style.display = hasBrd ? 'block' : 'none';
+  }
+
+  // Sync push prompt and auto-show modal if needed
+  updatePushUI(state.pushSubscribed);
+  maybeShowNotifModal();
 
   // Start (or restart) the countdown
   if (state.countdownId) clearInterval(state.countdownId);
@@ -948,15 +1621,30 @@ function tick() {
   const badge       = document.getElementById('active-badge');
 
   if (diff < 0) {
+    const overdueMins = -diff / 60000;
+    const grace       = state.checkin?.grace_minutes ?? 30;
+    const fullOverdue = overdueMins >= grace;
+
     countdownEl.textContent = '-' + fmtDuration(-diff);
     countdownEl.classList.add('overdue');
+    card.classList.remove('warning', 'critical');
     card.classList.add('overdue');
-    badge.className = 'badge badge-alert';
-    badge.textContent = 'OVERDUE';
+
+    if (fullOverdue) {
+      badge.className   = 'badge badge-alert';
+      badge.textContent = '⚠ OVERDUE';
+      card.classList.add('overdue-full');
+    } else {
+      badge.className   = 'badge badge-warn';
+      badge.textContent = '⏰ LATE';
+      card.classList.remove('overdue-full');
+    }
   } else {
     countdownEl.textContent = fmtDuration(diff);
     countdownEl.classList.remove('overdue');
-    card.classList.remove('overdue');
+    card.classList.remove('overdue', 'overdue-full');
+    card.classList.toggle('critical', diff <= 5 * 60 * 1000);
+    card.classList.toggle('warning', diff > 5 * 60 * 1000 && diff <= 15 * 60 * 1000);
     if (!badge.innerHTML.includes('status-dot')) {
       badge.className = 'badge badge-ok';
       badge.innerHTML = '<span class="status-dot"></span>CHECKED IN';
@@ -964,52 +1652,148 @@ function tick() {
   }
 }
 
-// ── Checkout ──────────────────────────────────────────────────────────────────
+// ── Checkout (shared logic) ───────────────────────────────────────────────────
 
-document.getElementById('btn-checkout').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-checkout');
-
-  // Two-tap confirmation (avoids accidental checkout on mobile)
-  if (!state.checkoutPending) {
-    state.checkoutPending = true;
-    btn.textContent = 'Tap again to confirm';
-    btn.classList.add('confirming');
-    state.checkoutTimer = setTimeout(() => {
-      state.checkoutPending = false;
-      btn.textContent = 'Check Out';
-      btn.classList.remove('confirming');
-    }, 3000);
-    return;
-  }
-
-  clearTimeout(state.checkoutTimer);
-  state.checkoutPending = false;
-  btn.classList.remove('confirming');
-  setBusy(btn, 'Checking out…');
-
+async function doCheckout() {
   const res = await api('POST', `/api/checkin/${state.checkin.id}/checkout`);
-  clearBusy(btn, 'Check Out');
+
   if (res._expired) return;
 
   if (!res.ok) {
+    // Reset slider to resting position
+    const handle = document.getElementById('slide-handle');
+    const fill   = document.getElementById('slide-fill');
+    const label  = document.getElementById('slide-label');
+    const track  = document.getElementById('slide-track');
+    if (handle) { handle.style.transition = 'transform .25s ease'; handle.style.transform = 'translateX(0)'; }
+    if (fill)   { fill.style.transition   = 'width .25s ease';     fill.style.width        = '0'; }
+    if (label)  { label.style.opacity = '1'; label.textContent = 'SLIDE TO CHECK OUT'; }
+    if (track)  { track.style.pointerEvents = ''; }
     setErr('err-active', res.error || 'Checkout failed. Please try again.');
     return;
   }
 
   if (state.countdownId) { clearInterval(state.countdownId); state.countdownId = null; }
   state.checkin = null;
-  showToast('Checked out. Stay safe!');
+  showToast('✅ Checked out.\nStay safe!', true);
   initCheckinForm();
   show('checkin');
+}
+
+// ── Slide-to-checkout ─────────────────────────────────────────────────────────
+
+(function initSlideCheckout() {
+  const track  = document.getElementById('slide-track');
+  const handle = document.getElementById('slide-handle');
+  const fill   = document.getElementById('slide-fill');
+  const label  = document.getElementById('slide-label');
+  if (!track || !handle) return;
+
+  const HD = 55;  // handle diameter px
+  const HP = 9;  // handle inset from track edge px
+
+  let dragging = false;
+  let startX   = 0;
+  let posX     = 0;
+
+  function travelMax() { return track.offsetWidth - HD - HP * 2; }
+
+  function setPos(x, animate) {
+    posX = Math.max(0, Math.min(x, travelMax()));
+    handle.style.transition = animate ? 'transform .25s ease' : '';
+    fill.style.transition   = animate ? 'width .25s ease'     : '';
+    handle.style.transform  = `translateX(${posX}px)`;
+    fill.style.width        = posX > 0 ? `${HP + HD + posX}px` : '0';
+    label.style.opacity     = Math.max(0, 1 - (posX / travelMax()) * 2).toFixed(2);
+  }
+
+  handle.addEventListener('pointerdown', e => {
+    if (track.style.pointerEvents === 'none') return;
+    dragging = true;
+    startX   = e.clientX - posX;
+    handle.setPointerCapture(e.pointerId);
+    handle.style.transition = '';
+    fill.style.transition   = '';
+    e.preventDefault();
+  });
+
+  handle.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    setPos(e.clientX - startX, false);
+  });
+
+  handle.addEventListener('pointerup', e => {
+    if (!dragging) return;
+    dragging = false;
+    handle.releasePointerCapture(e.pointerId);
+
+    if (posX >= travelMax() * 0.78) {
+      setPos(travelMax(), true);
+      label.textContent   = 'Checking out…';
+      label.style.opacity = '1';
+      track.style.pointerEvents = 'none';
+      if (navigator.vibrate) navigator.vibrate(40);
+      setTimeout(doCheckout, 280);
+    } else {
+      setPos(0, true);
+    }
+  });
+
+  handle.addEventListener('pointercancel', () => {
+    if (!dragging) return;
+    dragging = false;
+    setPos(0, true);
+  });
+
+  window._resetSlide = function() {
+    dragging = false;
+    posX     = 0;
+    handle.style.transition = 'transform .3s ease';
+    fill.style.transition   = 'width .3s ease';
+    handle.style.transform  = 'translateX(0)';
+    fill.style.width        = '0';
+    label.style.opacity     = '1';
+    label.textContent       = 'SLIDE TO CHECK OUT';
+    track.style.pointerEvents = '';
+    setTimeout(() => {
+      handle.style.transition = '';
+      fill.style.transition   = '';
+    }, 350);
+  };
+})();
+
+// ── Return-time quick buttons ─────────────────────────────────────────────────
+
+document.querySelectorAll('.btn-eta-quick').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mins = Number(btn.dataset.mins);
+    const eta  = new Date(Date.now() + mins * 60_000);
+    eta.setSeconds(0, 0);
+    const p = n => String(n).padStart(2, '0');
+    document.getElementById('input-eta-time').value =
+      `${p(eta.getHours())}:${p(eta.getMinutes())}`;
+    document.getElementById('input-eta-date').value =
+      `${eta.getFullYear()}-${p(eta.getMonth()+1)}-${p(eta.getDate())}`;
+    document.querySelectorAll('.btn-eta-quick').forEach(b =>
+      b.classList.toggle('active', b === btn));
+  });
+});
+
+// ── Check-in logo tap ─────────────────────────────────────────────────────────
+
+document.getElementById('checkin-logo-btn').addEventListener('click', () => {
+  const form = document.getElementById('form-checkin');
+  try { form.requestSubmit(); } catch { form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); }
 });
 
 // ── ETA update ────────────────────────────────────────────────────────────────
 
 document.querySelectorAll('.btn-eta').forEach(btn => {
   btn.addEventListener('click', async () => {
-    const hours   = Number(btn.dataset.hours);
-    const current = new Date(state.checkin.expected_out_at).getTime();
-    const newEta  = new Date(current + hours * 3600_000).toISOString();
+    const hours = Number(btn.dataset.hours);
+    // When overdue, expected_out_at is in the past — extend from now instead
+    const base  = Math.max(Date.now(), new Date(state.checkin.expected_out_at).getTime());
+    const newEta = new Date(base + hours * 3600_000).toISOString();
 
     btn.disabled = true;
     const res = await api('PATCH', `/api/checkin/${state.checkin.id}/eta`, {
@@ -1024,11 +1808,69 @@ document.querySelectorAll('.btn-eta').forEach(btn => {
     }
 
     state.checkin.expected_out_at = newEta;
-    document.getElementById('countdown-sub').textContent =
-      'Return by ' + fmtDateTime(newEta);
+    state.checkin.status = 'active';   // reset overdue if it was set
+    renderActive();                     // re-draw to clear overdue styling
+    document.getElementById('countdown-sub').textContent = 'DUE ' + fmtTime(newEta);
     showToast('ETA extended to ' + fmtTime(newEta));
   });
 });
+
+// ── Custom ETA picker ─────────────────────────────────────────────────────────
+
+document.getElementById('btn-eta-custom').addEventListener('click', () => {
+  const etaInput = document.getElementById('eta-custom-time');
+  if (state.checkin?.expected_out_at) {
+    etaInput.value = isoToLocalTime(state.checkin.expected_out_at);
+  }
+  document.getElementById('eta-row').style.display = 'none';
+  document.getElementById('eta-custom-row').style.display = 'flex';
+  etaInput.focus();
+});
+
+document.getElementById('btn-eta-cancel').addEventListener('click', () => {
+  document.getElementById('eta-custom-row').style.display = 'none';
+  document.getElementById('eta-row').style.display = 'flex';
+});
+
+document.getElementById('btn-eta-save').addEventListener('click', async () => {
+  const timeStr = document.getElementById('eta-custom-time').value;
+  if (!timeStr) return;
+  const newEta = timeToISO(timeStr);
+
+  const saveBtn = document.getElementById('btn-eta-save');
+  saveBtn.disabled = true;
+  const res = await api('PATCH', `/api/checkin/${state.checkin.id}/eta`, {
+    expected_out_at: newEta,
+  });
+  saveBtn.disabled = false;
+  if (res._expired) return;
+
+  if (!res.ok) {
+    setErr('err-active', res.error || 'Failed to update ETA. Please try again.');
+    return;
+  }
+
+  state.checkin.expected_out_at = newEta;
+  state.checkin.status = 'active';
+  renderActive();
+  document.getElementById('countdown-sub').textContent = 'DUE ' + fmtTime(newEta);
+  showToast('ETA set to ' + fmtTime(newEta));
+  document.getElementById('eta-custom-row').style.display = 'none';
+  document.getElementById('eta-row').style.display = 'flex';
+});
+
+function isoToLocalTime(iso) {
+  const d = new Date(iso);
+  return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+}
+
+function timeToISO(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const now = new Date();
+  const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if (candidate <= now) candidate.setDate(candidate.getDate() + 1);
+  return candidate.toISOString();
+}
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -1092,24 +1934,28 @@ function toDatetimeLocal(d) {
          `T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-/** Toast notification (auto-dismisses after 3 s) */
+/** Toast notification (auto-dismisses after 3 s; prominent variant centers + enlarges) */
 let _toastTimer;
-function showToast(msg) {
+function showToast(msg, prominent = false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
+  el.classList.toggle('prominent', prominent);
   el.classList.add('visible');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+  _toastTimer = setTimeout(() => {
+    el.classList.remove('visible');
+    el.classList.remove('prominent');
+  }, prominent ? 4000 : 3000);
 }
 
 // ── Web Push ──────────────────────────────────────────────────────────────────
 
 /**
- * Register the service worker and subscribe to Web Push notifications.
- * Called silently after auth — any error is swallowed.
+ * Register the service worker and re-sync any existing push subscription.
+ * Safe to call automatically — does NOT request permission or prompt the user.
  *
- * iOS Safari requires PWA install (M10) for push to work.
- * Android Chrome works immediately once permission is granted.
+ * iOS requires pushManager.subscribe() to be called inside a user gesture.
+ * We handle that via the "Enable notifications" button → requestPushPermission().
  */
 async function initPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
@@ -1119,23 +1965,45 @@ async function initPush() {
     reg = await navigator.serviceWorker.register('/sw.js');
   } catch (e) {
     console.warn('[push] SW registration failed:', e.message);
+    updatePushUI(false);
     return;
   }
 
-  // If already subscribed, re-sync the subscription with the server
-  // (browsers can re-key subscriptions without notice)
+  // Re-sync an existing subscription (browsers can silently re-key these).
+  // .toJSON() is required — JSON.stringify(PushSubscription) produces {}.
   const existing = await reg.pushManager.getSubscription().catch(() => null);
   if (existing) {
-    await api('POST', '/api/push/subscribe', existing).catch(() => {});
+    const res = await api('POST', '/api/push/subscribe', existing.toJSON()).catch(() => null);
+    if (res?.ok) {
+      state.pushSubscribed = true;
+      updatePushUI(true);
+      return;
+    }
+    // Re-sync failed (stale endpoint) — fall through to show the enable button
+  }
+
+  // No active subscription yet — show the enable button so the user can opt in
+  // with an explicit tap (required by iOS for the permission prompt to fire).
+  state.pushSubscribed = false;
+  updatePushUI(false);
+}
+
+/**
+ * Request push permission and subscribe. MUST be called inside a click handler
+ * so iOS will show the native notification permission prompt.
+ */
+async function requestPushPermission() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  const reg = await navigator.serviceWorker.ready.catch(() => null);
+  if (!reg) return;
+
+  const keyRes = await api('GET', '/api/push/vapid-key').catch(() => null);
+  if (!keyRes?.ok || !keyRes.publicKey) {
+    console.warn('[push] Could not fetch VAPID key');
     return;
   }
 
-  // Fetch VAPID public key from server
-  const keyRes = await api('GET', '/api/push/vapid-key').catch(() => null);
-  if (!keyRes?.ok || !keyRes.publicKey) return;
-
-  // Request push permission and subscribe
-  // On Android Chrome this may prompt the user; on iOS requires PWA install (M10)
   let sub;
   try {
     sub = await reg.pushManager.subscribe({
@@ -1143,14 +2011,45 @@ async function initPush() {
       applicationServerKey: urlB64ToUint8Array(keyRes.publicKey),
     });
   } catch (e) {
-    // User denied permission, or browser doesn't support push
-    console.log('[push] Push subscribe failed (normal if permission denied):', e.message);
+    console.log('[push] Permission denied or subscribe failed:', e.message);
     return;
   }
 
-  // Save subscription to server
-  await api('POST', '/api/push/subscribe', sub).catch(() => {});
-  console.log('[push] Push subscription registered.');
+  const res = await api('POST', '/api/push/subscribe', sub.toJSON()).catch(() => null);
+  if (res?.ok) {
+    state.pushSubscribed = true;
+    updatePushUI(true);
+    hideNotifModal();
+    console.log('[push] Push subscription registered.');
+  }
+}
+
+/** Show or hide push UI based on whether push is already subscribed. */
+function updatePushUI(subscribed) {
+  const supported = ('serviceWorker' in navigator) && ('PushManager' in window);
+  const needsPrompt = supported && !subscribed;
+  // Inline fallback buttons (shown after modal is dismissed)
+  const el1 = document.getElementById('push-prompt-checkin');
+  const el2 = document.getElementById('push-prompt-active');
+  if (el1) el1.style.display = needsPrompt ? 'block' : 'none';
+  if (el2) el2.style.display = needsPrompt ? 'block' : 'none';
+}
+
+/** Auto-show the notification permission modal if push is not yet subscribed.
+ *  Skipped if the user tapped "Not now" this session (sessionStorage flag). */
+function maybeShowNotifModal() {
+  const supported = ('serviceWorker' in navigator) && ('PushManager' in window);
+  if (!supported || state.pushSubscribed) return;
+  if (sessionStorage.getItem('notifModalDismissed')) return;
+  setTimeout(() => {
+    const overlay = document.getElementById('notif-overlay');
+    if (overlay && !state.pushSubscribed) overlay.classList.add('visible');
+  }, 800); // brief delay so the screen settles before the sheet slides up
+}
+
+function hideNotifModal() {
+  const overlay = document.getElementById('notif-overlay');
+  if (overlay) overlay.classList.remove('visible');
 }
 
 /** Convert a base64url string to Uint8Array (required for applicationServerKey) */
@@ -1214,6 +2113,24 @@ document.getElementById('btn-install-add').addEventListener('click', async () =>
 document.getElementById('btn-install-dismiss').addEventListener('click', () =>
   dismissInstallBanner(false)
 );
+
+// ── Push notification modal buttons ──────────────────────────────────────────
+// Enable button: must be a direct click handler so iOS treats subscribe() as a gesture.
+document.getElementById('btn-notif-enable').addEventListener('click', () => {
+  hideNotifModal();
+  requestPushPermission();
+});
+
+document.getElementById('btn-notif-later').addEventListener('click', () => {
+  hideNotifModal();
+  sessionStorage.setItem('notifModalDismissed', '1'); // don't re-show this session
+});
+
+// Inline fallback buttons (visible after modal is dismissed)
+['btn-enable-push-checkin', 'btn-enable-push-active'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', () => requestPushPermission());
+});
 
 function dismissInstallBanner(permanent) {
   const banner = document.getElementById('install-banner');

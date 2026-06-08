@@ -1,10 +1,7 @@
 node_modules/
 .wrangler/
-dist/
-*.local
-.env
-.env.*
-!.env.example
+*.log
 
-# Source data — contains PII (names, phone numbers). Never commit.
-source-data/
+# Local screenshots and planning docs
+Screenshot*.png
+buddy-check_*.md

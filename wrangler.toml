@@ -49,6 +49,39 @@ BOARD_PHONES  = "+19175939143"
 # Admins can manage members and review pending registration requests
 ADMIN_PHONES  = "+19175939143"
 
+# ── Staging environment ───────────────────────────────────────────────────────
+# Deploy: npx wrangler deploy --env staging
+# Secrets: wrangler secret put <KEY> --env staging  (same set as production)
+# DB: shares prod DB for pilot; create a dedicated staging DB for v2 if needed:
+#   wrangler d1 create buddy-check-db-staging  → update database_id below
+[env.staging]
+name = "pass-buddy-check-staging"
+
+[[env.staging.d1_databases]]
+binding        = "DB"
+database_name  = "buddy-check-db"
+database_id    = "b54097b7-8255-422d-967f-56f655c81383"
+migrations_dir = "migrations"
+
+[env.staging.durable_objects]
+bindings = [{ name = "CHECKIN_ALARM", class_name = "CheckinAlarmDO" }]
+
+[env.staging.triggers]
+crons = []
+
+[env.staging.assets]
+directory        = "./public"
+binding          = "ASSETS"
+run_worker_first = true
+
+[env.staging.vars]
+APP_NAME      = "PASS Buddy Check (Staging)"
+APP_URL       = "https://pass-buddy-check-staging.passregioniv.workers.dev"
+SMS_ENABLED   = "false"
+EMAIL_ENABLED = "false"
+BOARD_PHONES  = "+19175939143"
+ADMIN_PHONES  = "+19175939143"
+
 # ── Secrets (set via CLI — never commit values to git) ───────────────────────
 #
 # Required before launch:
@@ -56,6 +89,9 @@ ADMIN_PHONES  = "+19175939143"
 #   wrangler secret put VAPID_PUBLIC_KEY    # from: npx web-push generate-vapid-keys
 #   wrangler secret put VAPID_PRIVATE_KEY
 #   wrangler secret put VAPID_SUBJECT       # mailto:bstruck@passnational.org
+#
+# W3W reverse geocoding (M13 Drop a Pin):
+#   wrangler secret put W3W_API_KEY    # restricted to pass-buddy-check.passregioniv.workers.dev
 #
 # Phase 2 — SMS (Twilio):
 #   wrangler secret put TWILIO_ACCOUNT_SID

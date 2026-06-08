@@ -16,12 +16,14 @@ import { handleRegister, handleRosterImport }       from './register.js';
 import { handleCheckin, handleGetActiveCheckin,
          handleCheckout, handleEtaUpdate }           from './checkin.js';
 import { handleVapidKey, handleSubscribe,
-         handleUnsubscribe }                         from './subscribe.js';
+         handleUnsubscribe, handleTestPush }         from './subscribe.js';
 import { handleBoard }                               from './board.js';
 import { handleAdminListMembers, handleAdminAddMember,
          handleAdminUpdateMember, handleAdminListRequests,
          handleAdminDecideRequest, handleAdminPurge } from './admin.js';
 import { handlePurge }                               from './purge.js';
+import { handleAdminAnalytics }                      from './analytics.js';
+import { handleDropPin }                              from './location.js';
 
 // Required: Cloudflare must see the DO class exported from the entry point
 export { CheckinAlarmDO };
@@ -55,10 +57,14 @@ const routes = [
   ['PATCH', '/api/checkin/:id/eta',           handleEtaUpdate],
   ['POST',  '/api/checkin/:id/checkout',      handleCheckout],
 
+  // Drop a Pin — live location update (M13)
+  ['PATCH', '/api/checkin/:id/location',      handleDropPin],
+
   // Web Push subscription (M5)
   ['GET',    '/api/push/vapid-key',           handleVapidKey],
   ['POST',   '/api/push/subscribe',           handleSubscribe],
   ['DELETE', '/api/push/subscribe',           handleUnsubscribe],
+  ['GET',    '/api/push/test',                handleTestPush],  // debug — remove after
 
   // Active board (M8)
   ['GET',   '/api/board',                     handleBoard],
@@ -79,7 +85,7 @@ const routes = [
   ['POST',  '/api/admin/purge',               handleAdminPurge],
 
   // Analytics (M12)
-  // ['GET',   '/api/admin/analytics',           handleAdminAnalytics],
+  ['GET',   '/api/admin/analytics',           handleAdminAnalytics],
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -136,7 +136,8 @@ export async function handleGetActiveCheckin(request, env) {
   const { results } = await env.DB.prepare(`
     SELECT id, buddy_name, buddy_phone, buddy_email,
            location_label, w3w_address, activity,
-           expected_out_at, grace_minutes, status, checkin_at
+           expected_out_at, grace_minutes, status, checkin_at,
+           current_w3w, location_updated_at, location_update_count
     FROM   checkins
     WHERE  member_id = ? AND status IN ('active', 'overdue')
     ORDER  BY checkin_at DESC
@@ -258,7 +259,7 @@ export async function handleEtaUpdate(request, env, params) {
     SELECT c.id, c.grace_minutes, m.push_sub
     FROM   checkins c
     JOIN   members  m ON m.id = c.member_id
-    WHERE  c.id = ? AND c.member_id = ? AND c.status = 'active'
+    WHERE  c.id = ? AND c.member_id = ? AND c.status IN ('active', 'overdue')
   `).bind(id, session.sub).all();
 
   if (!results.length) return err404();
@@ -269,6 +270,8 @@ export async function handleEtaUpdate(request, env, params) {
   await env.DB.prepare(
     `UPDATE checkins
      SET expected_out_at   = ?,
+         status            = 'active',
+         overdue_alerted_at = NULL,
          eta_updated_count = eta_updated_count + 1
      WHERE id = ?`
   ).bind(expected_out_at, id).run();

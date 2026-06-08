@@ -54,7 +54,7 @@
       border-radius: 99px;
       flex-shrink: 0;
     }
-    h1 { font-size: 1.2rem; font-weight: 700; }
+    h1 { font-size: 1.35rem; font-weight: 700; }
 
     /* ── Tabs ─────────────────────────────────────────────────── */
     .tabs {
@@ -71,9 +71,9 @@
       background: none;
       border: none;
       color: var(--muted);
-      font-size: .85rem;
+      font-size: .92rem;
       font-weight: 600;
-      padding: .45rem 1rem;
+      padding: .5rem 1.1rem;
       border-radius: .5rem;
       cursor: pointer;
       transition: background .15s, color .15s;
@@ -153,11 +153,11 @@
       flex-wrap: wrap;
     }
     .member-primary { flex: 1; min-width: 160px; }
-    .member-name { font-size: .92rem; font-weight: 600; }
+    .member-name { font-size: 1rem; font-weight: 600; }
     .member-meta {
-      font-size: .74rem;
+      font-size: .82rem;
       color: var(--muted);
-      margin-top: .15rem;
+      margin-top: .2rem;
       display: flex;
       gap: .6rem;
       flex-wrap: wrap;
@@ -407,6 +407,119 @@
       max-width: 800px;
     }
     .footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+
+    /* ── Analytics ────────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      padding: .9rem 1rem;
+    }
+    .stat-label {
+      font-size: .7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: .3rem;
+    }
+    .stat-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-sub {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-top: .25rem;
+    }
+    .stat-card.highlight { border-color: rgba(200,169,81,.35); }
+    .stat-card.highlight .stat-value { color: var(--gold); }
+
+    .chart-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      padding: 1rem 1.1rem;
+      margin-bottom: .75rem;
+    }
+    .chart-title {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: .9rem;
+    }
+
+    /* Horizontal bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: .5rem; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 36px;
+      align-items: center;
+      gap: .5rem;
+    }
+    .bar-row-label {
+      font-size: .77rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-track {
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+    .bar-fill.muted-bar { background: var(--surface2); filter: brightness(1.5); }
+    .bar-count {
+      font-size: .74rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* Sparkline (daily 30d) */
+    .sparkline-wrap { overflow-x: auto; }
+    .sparkline {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 48px;
+      min-width: 200px;
+    }
+    .spark-bar {
+      flex: 1;
+      min-width: 4px;
+      max-width: 14px;
+      background: var(--gold);
+      border-radius: 2px 2px 0 0;
+      opacity: .75;
+      transition: opacity .1s;
+    }
+    .spark-bar:hover { opacity: 1; }
+    .spark-axis {
+      display: flex;
+      justify-content: space-between;
+      font-size: .62rem;
+      color: var(--muted);
+      margin-top: .3rem;
+    }
   </style>
 </head>
 <body>
@@ -462,10 +575,11 @@
 'use strict';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let _members     = [];
-let _requests    = [];
-let _filter      = 'all';   // all | active | pending | suspended
-let _activeTab   = 'members';
+let _members          = [];
+let _requests         = [];
+let _filter           = 'all';   // all | active | pending | suspended
+let _activeTab        = 'members';
+let _analyticsLoaded  = false;
 
 // ── API helper ─────────────────────────────────────────────────────────────────
 async function api(method, path, body) {
@@ -539,6 +653,7 @@ function renderShell() {
       <button class="tab-btn" data-tab="requests">
         Pending <span class="count" id="count-requests">—</span>
       </button>
+      <button class="tab-btn" data-tab="analytics">Analytics</button>
     </div>
 
     <div id="panel-members" class="panel active">
@@ -557,6 +672,21 @@ function renderShell() {
 
     <div id="panel-requests" class="panel">
       <div class="request-list" id="requests-list"></div>
+    </div>
+
+    <div id="panel-analytics" class="panel">
+      <div class="toolbar" style="margin-bottom:1rem">
+        <div style="font-size:.8rem;color:var(--muted);line-height:1.4">
+          Purge archives closed check-ins older than 7 days into analytics.
+        </div>
+        <button class="btn-add" id="btn-run-purge">Run Purge</button>
+      </div>
+      <div id="analytics-content">
+        <div class="empty" style="padding:3rem 1rem">
+          <div class="empty-icon">📊</div>
+          <h3>Loading analytics…</h3>
+        </div>
+      </div>
     </div>
 
     <div class="footer">
@@ -581,6 +711,40 @@ function renderShell() {
     renderMembers();
   });
 
+  // Run Purge button (Analytics tab — wired here so listener survives tab switches)
+  document.getElementById('btn-run-purge').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-run-purge');
+    if (btn.dataset.confirming === 'true') {
+      // Second click — confirmed, run it
+      btn.dataset.confirming = 'false';
+      btn.textContent = 'Running…';
+      btn.disabled = true;
+      const res = await api('POST', '/api/admin/purge');
+      btn.disabled = false;
+      btn.textContent = 'Run Purge';
+      if (res.ok) {
+        showToast(`Purge complete — ${res.purged} check-in(s) archived.`);
+        // Reload analytics so the new data shows immediately
+        _analyticsLoaded = false;
+        loadAnalytics();
+      } else {
+        showToast(`Purge failed: ${res.error ?? 'Unknown error'}`);
+      }
+    } else {
+      // First click — ask for confirmation
+      btn.dataset.confirming = 'true';
+      btn.textContent = 'Confirm purge?';
+      btn.style.background = 'var(--amber)';
+      setTimeout(() => {
+        if (btn.dataset.confirming === 'true') {
+          btn.dataset.confirming = 'false';
+          btn.textContent = 'Run Purge';
+          btn.style.background = '';
+        }
+      }, 4000);
+    }
+  });
+
   // Add member button
   document.getElementById('btn-add-member').addEventListener('click', () => {
     document.getElementById('err-add').classList.remove('visible');
@@ -597,6 +761,11 @@ function switchTab(tab) {
   document.querySelectorAll('.panel').forEach(p =>
     p.classList.toggle('active', p.id === `panel-${tab}`)
   );
+  // Lazy-load analytics on first visit to the tab
+  if (tab === 'analytics' && !_analyticsLoaded) {
+    _analyticsLoaded = true;
+    loadAnalytics();
+  }
 }
 
 function updateTabCounts() {
@@ -827,6 +996,158 @@ function showToast(msg) {
   el.classList.add('visible');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+// ── Analytics ────────────────────────────────────────────────────────────────
+
+async function loadAnalytics() {
+  const el = document.getElementById('analytics-content');
+  if (!el) return;
+
+  const res = await api('GET', '/api/admin/analytics');
+  if (!res.ok) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>
+      <h3>Could not load analytics</h3>
+      <p>${res.error ?? 'Unknown error'}</p></div>`;
+    return;
+  }
+
+  // No data yet — pilot may just be starting
+  if (res.summary.total === 0) {
+    el.innerHTML = `<div class="empty" style="padding:3rem 1rem">
+      <div class="empty-icon">📊</div>
+      <h3>No data yet</h3>
+      <p>Analytics will appear here once check-ins complete and are archived by the nightly purge (7-day retention).</p>
+    </div>`;
+    return;
+  }
+
+  renderAnalytics(el, res);
+}
+
+function renderAnalytics(el, data) {
+  const { summary, by_location, by_duration, top_facilities, daily_30d } = data;
+
+  const maxLoc  = Math.max(...by_location.map(r => r.count),  1);
+  const maxDur  = Math.max(...by_duration.map(r => r.count),  1);
+  const maxFac  = Math.max(...top_facilities.map(r => r.count), 1);
+  const maxDay  = Math.max(...daily_30d.map(r => r.count), 1);
+
+  // Friendly labels
+  const LOC_LABELS  = { field: 'Field', fire: 'Fire', bomb_threat: 'Bomb Threat', tornado: 'Tornado', other: 'Other', unknown: 'Unknown' };
+  const DUR_LABELS  = { '<1h': 'Under 1 hr', '1-4h': '1 – 4 hrs', '4-8h': '4 – 8 hrs', '8h+': '8 hrs+', incomplete: 'Incomplete' };
+
+  // Build 30-day map (fill gaps with 0)
+  const dayMap = {};
+  daily_30d.forEach(r => { dayMap[r.date] = r.count; });
+  const today = new Date();
+  const days30 = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days30.push({ date: key, count: dayMap[key] ?? 0 });
+  }
+  const firstDate = days30[0].date.slice(5).replace('-', '/');
+  const lastDate  = days30[days30.length - 1].date.slice(5).replace('-', '/');
+
+  el.innerHTML = `
+    <!-- Summary stat cards -->
+    <div class="stat-grid">
+      <div class="stat-card highlight">
+        <div class="stat-label">Total archived</div>
+        <div class="stat-value">${summary.total.toLocaleString()}</div>
+        <div class="stat-sub">all-time check-ins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last 7 days</div>
+        <div class="stat-value">${summary.last_7d.toLocaleString()}</div>
+        <div class="stat-sub">archived check-ins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last 30 days</div>
+        <div class="stat-value">${summary.last_30d.toLocaleString()}</div>
+        <div class="stat-sub">archived check-ins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ETA extended</div>
+        <div class="stat-value">${summary.eta_extended_pct}%</div>
+        <div class="stat-sub">${summary.eta_extended_total.toLocaleString()} of ${summary.total.toLocaleString()} check-ins</div>
+      </div>
+    </div>
+
+    <!-- Daily sparkline -->
+    <div class="chart-section">
+      <div class="chart-title">Daily check-ins — last 30 days</div>
+      <div class="sparkline-wrap">
+        <div class="sparkline">
+          ${days30.map(d => {
+            const h = maxDay > 0 ? Math.max(4, Math.round((d.count / maxDay) * 48)) : 4;
+            const opacity = d.count === 0 ? '0.2' : '0.75';
+            return `<div class="spark-bar" title="${d.date}: ${d.count}" style="height:${h}px;opacity:${opacity}"></div>`;
+          }).join('')}
+        </div>
+        <div class="spark-axis">
+          <span>${firstDate}</span>
+          <span>${lastDate}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.75rem;margin-bottom:.75rem">
+
+      <!-- By location type -->
+      <div class="chart-section" style="margin-bottom:0">
+        <div class="chart-title">By location type</div>
+        <div class="bar-chart">
+          ${by_location.length === 0
+            ? `<div style="font-size:.8rem;color:var(--muted)">No data</div>`
+            : by_location.map(r => `
+              <div class="bar-row">
+                <div class="bar-row-label">${LOC_LABELS[r.location_type] ?? r.location_type}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((r.count / maxLoc) * 100)}%"></div></div>
+                <div class="bar-count">${r.count}</div>
+              </div>`).join('')
+          }
+        </div>
+      </div>
+
+      <!-- By duration bucket -->
+      <div class="chart-section" style="margin-bottom:0">
+        <div class="chart-title">By duration</div>
+        <div class="bar-chart">
+          ${by_duration.length === 0
+            ? `<div style="font-size:.8rem;color:var(--muted)">No data</div>`
+            : by_duration.map(r => `
+              <div class="bar-row">
+                <div class="bar-row-label">${DUR_LABELS[r.duration_bucket] ?? r.duration_bucket}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((r.count / maxDur) * 100)}%"></div></div>
+                <div class="bar-count">${r.count}</div>
+              </div>`).join('')
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Top facilities -->
+    ${top_facilities.length === 0 ? '' : `
+    <div class="chart-section">
+      <div class="chart-title">Top facilities</div>
+      <div class="bar-chart">
+        ${top_facilities.map(r => `
+          <div class="bar-row">
+            <div class="bar-row-label">${r.facility_code}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.round((r.count / maxFac) * 100)}%"></div></div>
+            <div class="bar-count">${r.count}</div>
+          </div>`).join('')}
+      </div>
+    </div>`}
+
+    <div style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:.5rem">
+      Data is anonymized. Check-ins are archived after 7 days with no PII retained.
+    </div>
+  `;
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 {
   "name": "PASS Buddy Check",
-  "short_name": "Buddy Check",
+  "short_name": "PASS Buddy",
   "description": "PASS Region IV employee location safety check-in system",
   "start_url": "/",
   "display": "standalone",
