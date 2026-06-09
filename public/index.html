@@ -243,10 +243,28 @@
     #screen-active.active {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      padding: max(1.5rem, env(safe-area-inset-top)) 1rem calc(135px + env(safe-area-inset-bottom));
+      padding: max(1.5rem, env(safe-area-inset-top)) 1rem calc(90px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: .5rem;
+    }
+
+    /* Floating header panel above card — full width */
+    .active-header {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: .85rem 1.5rem;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.3);
+      flex-shrink: 0;
+    }
+    .active-header-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      color: var(--text);
     }
     #screen-active.active .card-active {
       width: calc(100% - 10px);
@@ -259,16 +277,14 @@
       padding-bottom: 1rem;
       margin-bottom: 0;
     }
-    /* Center unit: badge + clock + slide — asymmetric padding shifts center upward */
+    /* Center unit: badge + clock + slide — anchored near top of card */
     .active-center {
-      flex: 1;
-      min-height: 0;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       width: 100%;
-      padding: .75rem 0 calc(3rem + 10px);
+      padding: .2rem 0 0;
     }
     /* Footer — fixed so it never moves when details expand */
     #screen-active .member-strip {
@@ -280,11 +296,13 @@
       border-radius: 1.25rem;
       box-shadow: 0 -8px 24px rgba(0,0,0,.45);
       z-index: 20;
-      padding: .4rem 1.5rem max(.6rem, env(safe-area-inset-bottom));
+      padding: .4rem 1.5rem 0;
     }
 
-    /* W3W collapse trigger — always visible at top of active card */
-    .active-w3w-hdr { margin-bottom: .5rem; }
+    /* DUE TIME, W3W and Buddy collapse triggers — always visible at bottom of active card */
+    .active-eta-hdr  { margin-top: .5rem;  margin-bottom: .35rem; }
+    .active-w3w-hdr  { margin-top: .35rem; margin-bottom: .35rem; }
+    .active-buddy-hdr { margin-top: .35rem; margin-bottom: .35rem; }
     .w3w-header-row { display: flex; gap: .4rem; align-items: center; }
     .w3w-header-row .w3w-trigger { flex: 1; }
     .pin-col {
@@ -302,21 +320,21 @@
       color: var(--muted);
     }
     .btn-drop-pin {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: .6rem;
+      background: none;
+      border: none;
       color: var(--muted);
-      font-size: 1.15rem;
+      font-size: 1.5rem;
       width: 44px;
       align-self: stretch;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
-      transition: border-color .15s, color .15s;
+      transition: color .15s, transform .1s;
       line-height: 1;
     }
-    .btn-drop-pin:hover { border-color: var(--gold); color: var(--gold); }
-    .btn-drop-pin:disabled { opacity: .5; cursor: default; }
-    .btn-drop-pin.pinned { border-color: var(--pass-green); color: var(--pass-green); }
+    .btn-drop-pin:hover  { color: var(--gold); }
+    .btn-drop-pin:active { transform: scale(.85); }
+    .btn-drop-pin:disabled { opacity: .4; cursor: default; }
+    .btn-drop-pin.pinned { color: var(--pass-green); }
     .w3w-trigger {
       display: flex;
       align-items: center;
@@ -343,26 +361,37 @@
       white-space: nowrap;
     }
     .w3w-chevron {
-      color: var(--muted);
-      font-size: .85rem;
+      color: var(--gold);
+      font-size: 1rem;
       transition: transform .25s;
       flex-shrink: 0;
+      opacity: .85;
+      line-height: 1;
     }
 
     /* Collapsible details — hidden by default */
-    .active-details {
+    .active-details,
+    .active-buddy-details,
+    .active-eta-details {
       overflow: hidden;
       max-height: 0;
       transition: max-height .35s ease;
     }
-    .active-details.expanded { max-height: 600px; }
+    .active-details.expanded,
+    .active-buddy-details.expanded,
+    .active-eta-details.expanded {
+      max-height: 600px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
-    /* Taglines above badge — fade + collapse when details flyout is open */
+    /* Taglines below slide bar — collapse when location section opens */
     .active-taglines {
       width: 100%;
       text-align: center;
-      margin-bottom: 1.75rem;
-      font-size: .98rem;
+      margin-top: 1.1rem;
+      margin-bottom: 0;
+      font-size: .9rem;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--muted);
@@ -371,22 +400,17 @@
       overflow: hidden;
       max-height: 120px;
       opacity: 1;
-      transition: opacity .3s ease, max-height .35s ease, margin-bottom .35s ease;
+      transition: opacity .3s ease, max-height .35s ease, margin-top .35s ease;
     }
-    .active-details.expanded ~ .active-center .active-taglines {
+    .card-active.details-open .active-taglines {
       opacity: 0;
       max-height: 0;
-      margin-bottom: 0;
+      margin-top: 0;
       pointer-events: none;
     }
-    /* When flyout open: anchor content to top, collapse asymmetric padding */
-    .active-details.expanded ~ .active-center {
-      justify-content: flex-start;
-      padding-top: 1.25rem;
-      padding-bottom: 1rem;
-    }
-    .active-details.expanded ~ .active-center .countdown-block { margin: .4rem 0; }
-    .active-details.expanded ~ .active-center .slide-track    { margin: .75rem 0 .25rem; }
+
+    /* Spacer: pushes location/buddy section to bottom of card */
+    .active-spacer { flex: 1; min-height: 0; }
     /* Card scrolls when flyout is open so slide bar is always reachable */
     .card-active.details-open { overflow-y: auto; }
 
@@ -400,18 +424,22 @@
 
     /* Buddy contact pill buttons */
     .buddy-btn {
-      display: inline-block;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
       background: var(--surface);
       border: 1.5px solid var(--gold);
       color: var(--gold);
       font-size: 1rem;
       font-weight: 700;
-      padding: .5rem 1.5rem;
+      padding: .5rem 1.75rem;
       border-radius: 99px;
       text-decoration: none;
       letter-spacing: .04em;
       transition: background .15s, color .15s;
     }
+    .buddy-btn-action { font-size: .7rem; letter-spacing: .1em; opacity: .8; }
+    .buddy-btn-name   { font-size: 1.05rem; }
     .buddy-btn:hover, .buddy-btn:active {
       background: var(--gold);
       color: #1a2744;
@@ -453,7 +481,13 @@
     }
     .info-val { flex: 1; word-break: break-word; line-height: 1.5; }
 
-    .countdown-block { margin: 1.2rem 0; }
+    .countdown-block { margin: .75rem 0; cursor: pointer; }
+    @keyframes clock-tap {
+      0%   { opacity: 1;  transform: scale(1); }
+      40%  { opacity: .6; transform: scale(.96); }
+      100% { opacity: 1;  transform: scale(1); }
+    }
+    .countdown.clock-tapped { animation: clock-tap .3s ease; }
     .countdown-label {
       font-size: 1rem;
       text-transform: uppercase;
@@ -491,7 +525,7 @@
       background: rgba(0,122,51,.18);
       border-radius: 99px;
       overflow: visible;
-      margin: 1.5rem 0 1rem;
+      margin: .875rem 0 1rem;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
@@ -538,22 +572,22 @@
       width: 100%;
       background: none;
       border: none;
-      padding: .0625rem 0 .25rem;
+      padding: 1.5rem 0 .25rem;
       cursor: pointer;
       text-align: center;
     }
     .checkin-logo-img {
-      height: 64px; width: auto;
+      height: 80px; width: auto;
       display: block; margin: 0 auto;
       opacity: .85;
       transition: opacity .1s, transform .1s;
     }
     .checkin-logo-btn:active .checkin-logo-img { opacity: 1; transform: scale(.92); }
     .checkin-logo-lbl {
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: var(--gold);
-      margin-top: .45rem;
+      margin-top: .55rem;
       letter-spacing: .06em;
       text-transform: uppercase;
     }
@@ -754,6 +788,104 @@
       line-height: 1;
     }
     .btn-install-dismiss:hover { color: var(--text); }
+
+    /* ── Auto-collapse sections ────────────────────────────────────── */
+    .auto-section { margin-bottom: 0; }
+
+    /* Summary row — visible when section is collapsed */
+    .section-summary-row {
+      display: none;
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid rgba(0,122,51,.35);
+      border-radius: .65rem;
+      padding: .6rem 1rem;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .6rem;
+      transition: border-color .15s;
+    }
+    .section-summary-row:hover { border-color: var(--gold); }
+    .section-summary-name {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--pass-green);
+      flex-shrink: 0;
+      margin-right: .25rem;
+    }
+    .section-summary-val {
+      flex: 1;
+      font-size: .88rem;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .section-edit-lbl {
+      font-size: .72rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .auto-section.collapsed .section-summary-row { display: flex; }
+
+    /* Section body — grid-row collapse for smooth height animation */
+    .section-body {
+      display: grid;
+      grid-template-rows: 1fr;
+      opacity: 1;
+      transition: grid-template-rows .35s ease, opacity .2s ease, margin .25s ease;
+    }
+    .section-body-inner { overflow: hidden; min-height: 0; }
+    .auto-section.collapsed .section-body {
+      grid-template-rows: 0fr;
+      opacity: 0;
+      pointer-events: none;
+      margin-bottom: 0;
+    }
+
+    /* ── Check-in form collapse toggles ───────────────────────────── */
+    .checkin-section-toggle {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: .5rem 0;
+      width: 100%;
+      text-align: left;
+      margin-top: .25rem;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      transition: color .15s;
+    }
+    .checkin-section-toggle:hover { color: var(--gold); }
+    .toggle-chevron {
+      font-size: .65rem;
+      transition: transform .25s;
+      display: inline-block;
+    }
+    .checkin-section-toggle.expanded .toggle-chevron { transform: rotate(90deg); }
+    .checkin-collapse {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .35s ease;
+    }
+    .checkin-collapse.expanded { max-height: 600px; }
+
+    /* Large primary time input (check-in form) */
+    #input-eta-time {
+      font-size: 1.5rem;
+      padding: .6rem .75rem;
+      text-align: center;
+      letter-spacing: .04em;
+    }
   </style>
 </head>
 <body>
@@ -846,73 +978,112 @@
     </div>
     <form id="form-checkin" novalidate>
 
-      <fieldset>
-        <legend>Safety Buddy</legend>
-        <p style="font-size:.8rem;color:var(--muted);margin:.25rem 0 .75rem">If you don't check out on time, your buddy is alerted.</p>
-        <label for="input-buddy-name">Name <span class="req">*</span></label>
-        <input id="input-buddy-name" type="text" autocomplete="name"
-               placeholder="Full name" required>
-        <label for="input-buddy-phone">Mobile number <span class="req">*</span></label>
-        <input id="input-buddy-phone" type="tel" inputmode="tel" autocomplete="tel"
-               placeholder="(555) 555-5555" required>
-        <label for="input-buddy-email">Email <span class="opt">(optional)</span></label>
-        <input id="input-buddy-email" type="email" autocomplete="email"
-               placeholder="buddy@example.com">
-      </fieldset>
-
-      <fieldset>
-        <legend>Location</legend>
-        <label for="input-location">Destination <span class="req">*</span></label>
-        <div class="loc-row">
-          <input id="input-location" type="text"
-                 placeholder="e.g. OKC FSDO, Smith Farm" required>
-          <button type="button" id="btn-geo" class="btn-geo" title="Capture GPS coordinates">&#128205;</button>
-        </div>
-        <p id="geo-status" class="geo-status"></p>
-        <label for="input-w3w">what3words <span class="opt">(optional)</span></label>
-        <input id="input-w3w" type="text" inputmode="text" autocomplete="off"
-               placeholder="word.word.word or use pin button">
-      </fieldset>
-
-      <fieldset>
-        <legend>Activity</legend>
-        <label for="input-act-type">Type</label>
-        <select id="input-act-type">
-          <option value="field">Field Inspection / Site Visit</option>
-          <option value="other">Meeting</option>
-          <option value="other">Training</option>
-          <option value="other" selected>Other</option>
-        </select>
-        <label for="input-activity">Notes <span class="opt">(optional)</span></label>
-        <input id="input-activity" type="text" placeholder="Brief description">
-      </fieldset>
-
-      <fieldset>
-        <legend>Return Time</legend>
-        <div class="eta-quick-row">
-          <button type="button" class="btn-eta-quick" data-mins="60">+1 hr</button>
-          <button type="button" class="btn-eta-quick" data-mins="120">+2 hrs</button>
-          <button type="button" class="btn-eta-quick" data-mins="180">+3 hrs</button>
-          <button type="button" class="btn-eta-quick" data-mins="240">+4 hrs</button>
-        </div>
-        <div class="eta-split-row">
-          <div class="eta-time-primary">
-            <label for="input-eta-time">Return time <span class="req">*</span></label>
-            <input id="input-eta-time" type="time" required>
-          </div>
-          <div class="eta-date-secondary">
-            <label for="input-eta-date">Date</label>
-            <input id="input-eta-date" type="date" required>
+      <div class="auto-section" id="section-buddy">
+        <button type="button" class="section-summary-row" id="summary-buddy">
+          <span class="section-summary-name">Safety Buddy</span>
+          <span class="section-summary-val" id="summary-val-buddy"></span>
+          <span class="section-edit-lbl">Edit ›</span>
+        </button>
+        <div class="section-body">
+          <div class="section-body-inner">
+            <fieldset>
+              <legend>Safety Buddy</legend>
+              <p style="font-size:.8rem;color:var(--muted);margin:.25rem 0 .75rem">If you don't check out on time, your buddy is alerted.</p>
+              <label for="input-buddy-name">Name <span class="req">*</span></label>
+              <input id="input-buddy-name" type="text" autocomplete="name"
+                     placeholder="Full name" required>
+              <label for="input-buddy-phone">Mobile number <span class="req">*</span></label>
+              <input id="input-buddy-phone" type="tel" inputmode="tel" autocomplete="tel"
+                     placeholder="(555) 555-5555" required>
+              <label for="input-buddy-email">Email <span class="opt">(optional)</span></label>
+              <input id="input-buddy-email" type="email" autocomplete="email"
+                     placeholder="buddy@example.com">
+            </fieldset>
           </div>
         </div>
-        <label for="input-grace">Alert delay if not back by then</label>
-        <select id="input-grace">
-          <option value="15">15 minutes</option>
-          <option value="30" selected>30 minutes</option>
-          <option value="60">1 hour</option>
-          <option value="120">2 hours</option>
-        </select>
-      </fieldset>
+      </div>
+
+      <div class="auto-section" id="section-location">
+        <button type="button" class="section-summary-row" id="summary-location">
+          <span class="section-summary-name">Location</span>
+          <span class="section-summary-val" id="summary-val-location"></span>
+          <span class="section-edit-lbl">Edit ›</span>
+        </button>
+        <div class="section-body">
+          <div class="section-body-inner">
+            <fieldset>
+              <legend>Location</legend>
+              <label for="input-location">Destination <span class="req">*</span></label>
+              <div class="loc-row">
+                <input id="input-location" type="text"
+                       placeholder="e.g. OKC FSDO, Smith Farm" required>
+                <button type="button" id="btn-geo" class="btn-geo" title="Capture GPS coordinates">&#128205;</button>
+              </div>
+              <p id="geo-status" class="geo-status"></p>
+              <label for="input-w3w">what3words <span class="opt">(optional)</span></label>
+              <input id="input-w3w" type="text" inputmode="text" autocomplete="off"
+                     placeholder="word.word.word or use pin button">
+            </fieldset>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="checkin-section-toggle" id="activity-toggle">
+        <span class="toggle-chevron">▶</span> Add activity details
+      </button>
+      <div class="checkin-collapse" id="activity-collapse">
+        <fieldset style="margin-top:.5rem">
+          <legend>Activity</legend>
+          <label for="input-act-type">Type</label>
+          <select id="input-act-type">
+            <option value="field">Field Inspection / Site Visit</option>
+            <option value="other">Meeting</option>
+            <option value="other">Training</option>
+            <option value="other" selected>Other</option>
+          </select>
+          <label for="input-activity">Notes <span class="opt">(optional)</span></label>
+          <input id="input-activity" type="text" placeholder="Brief description">
+        </fieldset>
+      </div>
+
+      <div class="auto-section" id="section-eta">
+        <button type="button" class="section-summary-row" id="summary-eta">
+          <span class="section-summary-name">Return Time</span>
+          <span class="section-summary-val" id="summary-val-eta"></span>
+          <span class="section-edit-lbl">Edit ›</span>
+        </button>
+        <div class="section-body">
+          <div class="section-body-inner">
+            <fieldset>
+              <legend>Return Time</legend>
+              <label for="input-eta-time">Return time <span class="req">*</span></label>
+              <input id="input-eta-time" type="time" required>
+              <div class="eta-quick-row" style="margin-top:.6rem">
+                <button type="button" class="btn-eta-quick" data-mins="60">+1 hr</button>
+                <button type="button" class="btn-eta-quick" data-mins="120">+2 hrs</button>
+                <button type="button" class="btn-eta-quick" data-mins="180">+3 hrs</button>
+                <button type="button" class="btn-eta-quick" data-mins="240">+4 hrs</button>
+              </div>
+              <button type="button" class="checkin-section-toggle" id="eta-advanced-toggle">
+                <span class="toggle-chevron">▶</span> More options
+              </button>
+              <div class="checkin-collapse" id="eta-advanced-collapse">
+                <div style="padding-top:.25rem">
+                  <label for="input-eta-date">Date <span class="opt">(for overnight trips)</span></label>
+                  <input id="input-eta-date" type="date" required>
+                  <label for="input-grace">Alert delay if not back by then</label>
+                  <select id="input-grace">
+                    <option value="15">15 minutes</option>
+                    <option value="30" selected>30 minutes</option>
+                    <option value="60">1 hour</option>
+                    <option value="120">2 hours</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+      </div>
 
       <p id="err-checkin" class="error-msg"></p>
 
@@ -949,29 +1120,20 @@
      Screen: Active Session
      ═══════════════════════════════════════════════════════════════════ -->
 <div id="screen-active" class="screen">
+
+  <!-- Floating header panel — sits above card, static -->
+  <div class="active-header">
+    <div class="active-header-title">PASS BUDDY</div>
+  </div>
+
   <div class="card card-active" id="card-active">
 
-    <!-- W3W trigger — always visible, tap to expand details -->
-    <div class="active-w3w-hdr" id="active-w3w-hdr">
-      <!-- populated by renderActive() -->
-    </div>
-
-    <!-- Collapsible details (Location, Buddy, In since) -->
-    <div class="active-details" id="active-details">
-      <!-- populated by renderActive() -->
-    </div>
-
-    <!-- Floating center unit: taglines + badge + clock + slide -->
+    <!-- Center unit: badge + clock + slide — anchored near top -->
     <div class="active-center">
-      <div class="active-taglines">
-        Member-run<br>
-        Employee to employee<br>
-        Not a management tool
-      </div>
       <div class="badge badge-ok" id="active-badge">
         <span class="status-dot"></span>CHECKED IN
       </div>
-      <div class="countdown-block">
+      <div class="countdown-block" id="countdown-block">
         <div class="countdown-label">Time remaining</div>
         <div class="countdown" id="countdown">--:--:--</div>
         <div class="countdown-sub" id="countdown-sub"></div>
@@ -985,35 +1147,67 @@
       </div>
     </div>
 
+    <!-- Taglines: below slide, collapses when location section expands -->
+    <div class="active-taglines">
+      Member-run<br>
+      Employee to employee<br>
+      Not a management tool
+    </div>
+
+    <!-- Spacer: pushes location/buddy section to bottom of card -->
+    <div class="active-spacer"></div>
+
+    <!-- Location & buddy info trigger — always visible at bottom of card -->
+    <div class="active-w3w-hdr" id="active-w3w-hdr">
+      <!-- populated by renderActive() -->
+    </div>
+
+    <!-- Collapsible W3W location details -->
+    <div class="active-details" id="active-details">
+      <!-- populated by renderActive() -->
+    </div>
+
+    <!-- DUE TIME trigger — always visible at bottom of card -->
+    <div class="active-eta-hdr" id="active-eta-hdr">
+      <!-- populated by renderActive() -->
+    </div>
+
+    <!-- Collapsible ETA update controls -->
+    <div class="active-eta-details" id="active-eta-details">
+      <div style="padding:.5rem 0 .25rem">
+        <div id="eta-row" class="eta-row" style="margin-top:0;margin-bottom:.4rem">
+          <button class="btn-eta" data-hours="0.25">+15</button>
+          <button class="btn-eta" data-hours="0.5">+30</button>
+          <button class="btn-eta" data-hours="1">+60</button>
+          <button class="btn-eta" id="btn-eta-custom">Custom</button>
+        </div>
+        <div id="eta-custom-row" class="eta-row" style="display:none;margin-top:0;margin-bottom:.4rem">
+          <input type="time" id="eta-custom-time" class="eta-time-input">
+          <button id="btn-eta-save" class="btn-eta" style="flex:0 0 auto;min-width:58px">Save</button>
+          <button id="btn-eta-cancel" class="btn-eta" style="flex:0 0 auto;min-width:42px;color:var(--muted)">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Buddy info trigger — always visible at bottom of active card -->
+    <div class="active-buddy-hdr" id="active-buddy-hdr">
+      <!-- populated by renderActive() -->
+    </div>
+
+    <!-- Collapsible buddy details -->
+    <div class="active-buddy-details" id="active-buddy-details">
+      <!-- populated by renderActive() -->
+    </div>
+
     <p id="err-active" class="error-msg"></p>
 
   </div><!-- end card-active -->
 
-  <!-- Footer strip: ETA, admin links, identity, W3W credit -->
+  <!-- Footer strip: admin links + W3W credit -->
   <div class="member-strip">
 
-    <!-- Panel label -->
-    <div style="text-align:center;margin-bottom:.3rem">
-      <span class="pin-lbl">Update ETA</span>
-    </div>
-
-    <!-- ETA extend buttons -->
-    <div id="eta-row" class="eta-row" style="margin-top:0;margin-bottom:.4rem">
-      <button class="btn-eta" data-hours="0.25">+15</button>
-      <button class="btn-eta" data-hours="0.5">+30</button>
-      <button class="btn-eta" data-hours="1">+60</button>
-      <button class="btn-eta" id="btn-eta-custom">Custom</button>
-    </div>
-
-    <!-- Custom time picker (shown when Custom is tapped) -->
-    <div id="eta-custom-row" class="eta-row" style="display:none;margin-top:0;margin-bottom:.4rem">
-      <input type="time" id="eta-custom-time" class="eta-time-input">
-      <button id="btn-eta-save" class="btn-eta" style="flex:0 0 auto;min-width:58px">Save</button>
-      <button id="btn-eta-cancel" class="btn-eta" style="flex:0 0 auto;min-width:42px;color:var(--muted)">✕</button>
-    </div>
-
     <!-- Admin / board links -->
-    <div id="admin-links-active" style="display:none;text-align:center;margin-bottom:.6rem;font-size:.88rem;color:var(--muted)">
+    <div id="admin-links-active" style="display:none;text-align:center;padding-top:.3rem;margin-bottom:.4rem;font-size:.88rem;color:var(--muted)">
       <a id="board-link-active" href="/board"
          style="color:var(--muted);text-decoration:underline;text-underline-offset:2px;display:none">
         Active Board →
@@ -1025,15 +1219,8 @@
       </a>
     </div>
 
-    <!-- Push prompt -->
-    <div id="push-prompt-active" style="display:none;text-align:center;margin-bottom:.5rem">
-      <button id="btn-enable-push-active" type="button" class="btn-link" style="margin:0 auto">
-        🔔 Enable push notifications
-      </button>
-    </div>
-
     <!-- W3W credit -->
-    <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.35rem">
+    <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.4rem 0 max(.6rem,env(safe-area-inset-bottom))">
       <a href="https://what3words.com" target="_blank" rel="noopener"
          style="display:inline-flex;align-items:center;text-decoration:none;opacity:.65">
         <img src="/w3w-logo-hz.svg" alt="what3words" height="18" style="display:block">
@@ -1109,6 +1296,8 @@ const state = {
   checkoutPending: false,
   pushSubscribed:  false,
   checkoutTimer:   null,
+  swReg:           null,   // cached SW registration — avoids async before subscribe()
+  vapidKey:        null,   // cached VAPID public key — avoids network call before subscribe()
 };
 
 // ── Screen management ─────────────────────────────────────────────────────────
@@ -1375,6 +1564,16 @@ function initCheckinForm() {
   state.geoLat = null;
   state.geoLon = null;
 
+  // Reset collapsible sections to closed
+  ['activity-toggle', 'eta-advanced-toggle'].forEach(id =>
+    document.getElementById(id)?.classList.remove('expanded'));
+  ['activity-collapse', 'eta-advanced-collapse'].forEach(id =>
+    document.getElementById(id)?.classList.remove('expanded'));
+
+  // Re-expand all auto-collapse sections for fresh check-in
+  ['section-buddy', 'section-location', 'section-eta'].forEach(id =>
+    document.getElementById(id)?.classList.remove('collapsed'));
+
   // Sync push prompt and auto-show modal if needed
   updatePushUI(state.pushSubscribed);
   maybeShowNotifModal();
@@ -1445,6 +1644,14 @@ document.getElementById('form-checkin').addEventListener('submit', async e => {
 
 // ── Active session ────────────────────────────────────────────────────────────
 
+function syncDetailsOpen() {
+  const anyOpen =
+    document.getElementById('active-eta-details')?.classList.contains('expanded') ||
+    document.getElementById('active-details')?.classList.contains('expanded') ||
+    document.getElementById('active-buddy-details')?.classList.contains('expanded');
+  document.getElementById('card-active')?.classList.toggle('details-open', anyOpen);
+}
+
 function renderActive() {
   const c = state.checkin;
   const card = document.getElementById('card-active');
@@ -1472,32 +1679,55 @@ function renderActive() {
   const displayW3W   = currentWords || origWords;
   const locationMoved = currentWords && origWords && currentWords !== origWords;
 
+  // Populate DUE TIME header row
+  const etaHdr = document.getElementById('active-eta-hdr');
+  const etaDetails = document.getElementById('active-eta-details');
+  etaDetails.classList.remove('expanded');
+
+  etaHdr.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+      <span class="pin-lbl">Due Time</span>
+      <span class="pin-lbl" style="color:var(--gold);opacity:.85">Update ›</span>
+    </div>
+    <button class="w3w-trigger" id="eta-trigger" style="width:100%">
+      <span style="flex:1;font-family:inherit">${esc(fmtDateTime(c.expected_out_at))}</span>
+      <span class="w3w-chevron" id="eta-chevron">▼</span>
+    </button>`;
+
+  document.getElementById('eta-trigger').addEventListener('click', () => {
+    const chevron = document.getElementById('eta-chevron');
+    etaDetails.classList.toggle('expanded');
+    const isOpen = etaDetails.classList.contains('expanded');
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+    syncDetailsOpen();
+  });
+
   // Populate W3W header row (trigger + pin button)
   const w3wHdr = document.getElementById('active-w3w-hdr');
 
   const triggerContent = displayW3W
     ? `<span class="w3w-trigger-addr">
         ///${esc(displayW3W)}${locationMoved
-          ? ' <span style="font-size:.7rem;color:var(--gold);margin-left:.2rem">↑</span>'
+          ? ' <span style="font-size:1rem;color:var(--gold);margin-left:.35rem;font-weight:700">↑</span>'
           : ''}
       </span>`
     : `<span class="w3w-trigger-addr" style="font-family:inherit">${esc(c.location_label)}</span>`;
 
   w3wHdr.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
-      <span class="pin-lbl">w3w Location &amp; Buddy Info</span>
-      <span class="pin-lbl">Update</span>
+      <span class="pin-lbl">W3W Location</span>
+      <span class="pin-lbl" style="color:var(--gold);opacity:.85">Update ›</span>
     </div>
     <div class="w3w-header-row">
       <button class="w3w-trigger" id="w3w-trigger">
         ${triggerContent}
-        <span class="w3w-chevron" id="w3w-chevron">▾</span>
+        <span class="w3w-chevron" id="w3w-chevron">▼</span>
       </button>
       <button class="btn-drop-pin${locationMoved ? ' pinned' : ''}" id="btn-drop-pin"
               title="Update my location" aria-label="Update location">📍</button>
     </div>`;
 
-  // Populate collapsible details
+  // Populate collapsible W3W details (location + activity only)
   const details = document.getElementById('active-details');
   details.classList.remove('expanded');
 
@@ -1516,32 +1746,58 @@ function renderActive() {
   details.innerHTML = `
     <div class="active-info" style="margin-top:.5rem">
       ${locationRow}
-      <div class="info-row">
-        <span class="info-lbl">Buddy</span>
-        <span class="info-val">
-          ${esc(c.buddy_name)}
-          <div style="margin-top:.6rem">
-            <a href="tel:${esc(c.buddy_phone)}" class="buddy-btn">Call</a>
-            &nbsp;
-            <a href="sms:${esc(c.buddy_phone)}" class="buddy-btn">Text</a>
-          </div>
-        </span>
-      </div>
       ${actHtml}
-      <div class="info-row">
-        <span class="info-lbl">In since</span>
-        <span class="info-val">${fmtTime(c.checkin_at)}</span>
-      </div>
     </div>`;
 
-  // Collapse/expand toggle
+  // Populate Buddy Info header row
+  const buddyHdr = document.getElementById('active-buddy-hdr');
+  buddyHdr.innerHTML = `
+    <div class="w3w-header-row">
+      <button class="w3w-trigger" id="buddy-trigger" style="justify-content:space-between">
+        <span class="pin-lbl">Buddy Info</span>
+        <span style="display:flex;align-items:center;gap:.5rem">
+          <span class="w3w-trigger-addr" style="font-family:inherit">${esc(c.buddy_name)}</span>
+          <span class="w3w-chevron" id="buddy-chevron">▼</span>
+        </span>
+      </button>
+    </div>`;
+
+  // Populate collapsible buddy details
+  const buddyDetails = document.getElementById('active-buddy-details');
+  buddyDetails.classList.remove('expanded');
+  const buddyFirst = esc(c.buddy_name.split(' ')[0]);
+  const smsW3W = c.current_w3w || c.w3w_address;
+  const smsBody = smsW3W
+    ? encodeURIComponent(`I've checked in on PASS Buddy Check.\n\nMy location: ///${smsW3W}\nhttps://w3w.co/${smsW3W}`)
+    : encodeURIComponent(`I've checked in on PASS Buddy Check at ${c.location_label}.`);
+  buddyDetails.innerHTML = `
+    <div class="active-info" style="padding:.75rem 0;display:flex;justify-content:center;gap:1rem">
+      <a href="tel:${esc(c.buddy_phone)}" class="buddy-btn">
+        <span class="buddy-btn-action">CALL</span>
+        <span class="buddy-btn-name">${buddyFirst}</span>
+      </a>
+      <a href="sms:${esc(c.buddy_phone)}&body=${smsBody}" class="buddy-btn">
+        <span class="buddy-btn-action">TEXT</span>
+        <span class="buddy-btn-name">${buddyFirst}</span>
+      </a>
+    </div>`;
+
+  // W3W toggle
   document.getElementById('w3w-trigger').addEventListener('click', () => {
     const chevron = document.getElementById('w3w-chevron');
     details.classList.toggle('expanded');
     const isOpen = details.classList.contains('expanded');
     if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
-    const cardEl = document.getElementById('card-active');
-    if (cardEl) cardEl.classList.toggle('details-open', isOpen);
+    syncDetailsOpen();
+  });
+
+  // Buddy toggle
+  document.getElementById('buddy-trigger').addEventListener('click', () => {
+    const chevron = document.getElementById('buddy-chevron');
+    buddyDetails.classList.toggle('expanded');
+    const isOpen = buddyDetails.classList.contains('expanded');
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+    syncDetailsOpen();
   });
 
   // Drop a Pin handler
@@ -1675,7 +1931,7 @@ async function doCheckout() {
 
   if (state.countdownId) { clearInterval(state.countdownId); state.countdownId = null; }
   state.checkin = null;
-  showToast('✅ Checked out.\nStay safe!', true);
+  showToast('✅ Checked out.\nBe Safe; Stay Well!', true);
   initCheckinForm();
   show('checkin');
 }
@@ -1761,6 +2017,23 @@ async function doCheckout() {
     }, 350);
   };
 })();
+
+// ── Countdown clock tap → toggle DUE TIME flyout ─────────────────────────────
+
+document.getElementById('countdown-block').addEventListener('click', () => {
+  const clockEl = document.getElementById('countdown');
+  if (clockEl) {
+    clockEl.classList.add('clock-tapped');
+    setTimeout(() => clockEl.classList.remove('clock-tapped'), 300);
+  }
+  const etaDetails = document.getElementById('active-eta-details');
+  if (!etaDetails) return;
+  const chevron = document.getElementById('eta-chevron');
+  etaDetails.classList.toggle('expanded');
+  const isOpen = etaDetails.classList.contains('expanded');
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+  syncDetailsOpen();
+});
 
 // ── Return-time quick buttons ─────────────────────────────────────────────────
 
@@ -1963,6 +2236,7 @@ async function initPush() {
   let reg;
   try {
     reg = await navigator.serviceWorker.register('/sw.js');
+    state.swReg = reg;
   } catch (e) {
     console.warn('[push] SW registration failed:', e.message);
     updatePushUI(false);
@@ -1970,7 +2244,6 @@ async function initPush() {
   }
 
   // Re-sync an existing subscription (browsers can silently re-key these).
-  // .toJSON() is required — JSON.stringify(PushSubscription) produces {}.
   const existing = await reg.pushManager.getSubscription().catch(() => null);
   if (existing) {
     const res = await api('POST', '/api/push/subscribe', existing.toJSON()).catch(() => null);
@@ -1979,11 +2252,14 @@ async function initPush() {
       updatePushUI(true);
       return;
     }
-    // Re-sync failed (stale endpoint) — fall through to show the enable button
   }
 
-  // No active subscription yet — show the enable button so the user can opt in
-  // with an explicit tap (required by iOS for the permission prompt to fire).
+  // Pre-fetch VAPID key NOW so the enable-button click handler can call
+  // subscribe() as its very first await — iOS requires no network calls
+  // between the user gesture and pushManager.subscribe().
+  const keyRes = await api('GET', '/api/push/vapid-key').catch(() => null);
+  if (keyRes?.ok && keyRes.publicKey) state.vapidKey = keyRes.publicKey;
+
   state.pushSubscribed = false;
   updatePushUI(false);
 }
@@ -1991,24 +2267,34 @@ async function initPush() {
 /**
  * Request push permission and subscribe. MUST be called inside a click handler
  * so iOS will show the native notification permission prompt.
+ *
+ * iOS requires pushManager.subscribe() to be the first await after the tap —
+ * any network call before it breaks the gesture chain and the dialog never appears.
+ * state.swReg and state.vapidKey are pre-fetched in initPush() to make this possible.
  */
 async function requestPushPermission() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-  const reg = await navigator.serviceWorker.ready.catch(() => null);
+  // Use cached registration; fall back to .ready if somehow not yet stored.
+  const reg = state.swReg || await navigator.serviceWorker.ready.catch(() => null);
   if (!reg) return;
 
-  const keyRes = await api('GET', '/api/push/vapid-key').catch(() => null);
-  if (!keyRes?.ok || !keyRes.publicKey) {
-    console.warn('[push] Could not fetch VAPID key');
-    return;
+  // Use cached key; fall back to network fetch only if missing (non-iOS path).
+  if (!state.vapidKey) {
+    const keyRes = await api('GET', '/api/push/vapid-key').catch(() => null);
+    if (!keyRes?.ok || !keyRes.publicKey) {
+      console.warn('[push] Could not fetch VAPID key');
+      return;
+    }
+    state.vapidKey = keyRes.publicKey;
   }
 
+  // subscribe() is now the first (and only) await after the user gesture.
   let sub;
   try {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly:      true,
-      applicationServerKey: urlB64ToUint8Array(keyRes.publicKey),
+      applicationServerKey: urlB64ToUint8Array(state.vapidKey),
     });
   } catch (e) {
     console.log('[push] Permission denied or subscribe failed:', e.message);
@@ -2148,6 +2434,84 @@ function dismissInstallBanner(permanent) {
     setTimeout(() => showInstallBanner('ios'), 4000);
   }
 })();
+
+// ── Auto-collapse sections ────────────────────────────────────────────────────
+
+function collapseSection(sectionId, summaryVal) {
+  const section = document.getElementById(sectionId);
+  if (!section || section.classList.contains('collapsed')) return;
+  const key = sectionId.replace('section-', '');
+  const valEl = document.getElementById('summary-val-' + key);
+  if (valEl) valEl.textContent = summaryVal;
+  section.classList.add('collapsed');
+}
+
+function expandSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  section.classList.remove('collapsed');
+  const first = section.querySelector('input:not([type=hidden])');
+  if (first) setTimeout(() => first.focus(), 350);
+}
+
+// Summary row taps → expand
+['buddy', 'location', 'eta'].forEach(key => {
+  document.getElementById('summary-' + key)?.addEventListener('click', () =>
+    expandSection('section-' + key));
+});
+
+// Safety Buddy: collapse when name + phone both filled AND focus leaves section
+function tryCollapseBuddy() {
+  const name  = document.getElementById('input-buddy-name').value.trim();
+  const phone = document.getElementById('input-buddy-phone').value.trim();
+  if (name && phone) {
+    collapseSection('section-buddy', `${name.split(' ')[0]} · ${phone}`);
+  }
+}
+document.getElementById('section-buddy').addEventListener('focusout', () => {
+  setTimeout(() => {
+    if (!document.getElementById('section-buddy').contains(document.activeElement)) {
+      tryCollapseBuddy();
+    }
+  }, 200);
+});
+
+// Location: collapse when destination filled AND focus leaves the entire section
+// (delay handles the case where user taps the 📍 pin button after typing)
+document.getElementById('section-location').addEventListener('focusout', () => {
+  setTimeout(() => {
+    if (!document.getElementById('section-location').contains(document.activeElement)) {
+      const loc = document.getElementById('input-location').value.trim();
+      if (loc) collapseSection('section-location', loc);
+    }
+  }, 200);
+});
+
+// Return Time: collapse on time blur or quick button tap
+function tryCollapseEta() {
+  const timeVal = document.getElementById('input-eta-time').value;
+  if (!timeVal) return;
+  const [h, m] = timeVal.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  collapseSection('section-eta', `${h12}:${String(m).padStart(2, '0')} ${period}`);
+}
+document.getElementById('input-eta-time').addEventListener('blur', tryCollapseEta);
+// Also collapse when a quick button is tapped (after the value is set)
+document.querySelectorAll('.btn-eta-quick').forEach(btn =>
+  btn.addEventListener('click', () => setTimeout(tryCollapseEta, 50)));
+
+// ── Check-in form collapse toggles ───────────────────────────────────────────
+
+document.getElementById('activity-toggle').addEventListener('click', function() {
+  this.classList.toggle('expanded');
+  document.getElementById('activity-collapse').classList.toggle('expanded');
+});
+
+document.getElementById('eta-advanced-toggle').addEventListener('click', function() {
+  this.classList.toggle('expanded');
+  document.getElementById('eta-advanced-collapse').classList.toggle('expanded');
+});
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 init();

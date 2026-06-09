@@ -59,8 +59,8 @@ name = "pass-buddy-check-staging"
 
 [[env.staging.d1_databases]]
 binding        = "DB"
-database_name  = "buddy-check-db"
-database_id    = "b54097b7-8255-422d-967f-56f655c81383"
+database_name  = "buddy-check-db-staging"
+database_id    = "836261fc-9105-45d9-96a7-b1e980e68db8"
 migrations_dir = "migrations"
 
 [env.staging.durable_objects]
